@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 MODEL_REPO_ID = "Jackaiuser/pup_detect"
 MODEL_FILENAME = "final_breakthrough_model.h5"
-MODEL_PATH = '/Jackaiuser/pup_detect/blob/main/final_breakthrough_model.h5'
+MODEL_PATH = hf_hub_download(repo_id=MODEL_REPO_ID, filename=MODEL_FILENAME)
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
