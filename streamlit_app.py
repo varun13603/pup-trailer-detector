@@ -121,7 +121,7 @@ def load_breakthrough_model():
         # Define custom InputLayer to handle batch_shape compatibility
         def custom_input_layer(*args, **kwargs):
             if 'batch_shape' in kwargs:
-                kwargs['batch_input_shape'] = kwargs.pop('batch_shape "')
+                kwargs['batch_input_shape'] = kwargs.pop('batch_shape')
             return InputLayer(*args, **kwargs)
         
         # Define custom DTypePolicy to handle dtype deserialization
@@ -148,8 +148,11 @@ def load_breakthrough_model():
     except Exception as e:
         logger.error(f"❌ Error loading model: {str(e)}")
         st.error(f"Failed to load model: {str(e)}")
-        st.info("This may be due to a TensorFlow version mismatch. Try updating TensorFlow with `pip install --upgrade tensorflow` to version 2.9 or later.")
-        st.info("Alternatively, ensure Keras 3 is installed if using standalone Keras: `pip install keras>=3.0.0`.")
+        st.info("This may be due to a TensorFlow/Keras version mismatch.")
+        st.info("1. Update TensorFlow to 2.9 or later: `pip install --upgrade tensorflow`")
+        st.info("2. If using standalone Keras, ensure Keras 3.0+ is installed: `pip install keras>=3.0.0`")
+        st.info("3. Check TensorFlow version: `python -c 'import tensorflow as tf; print(tf.__version__)'`")
+        st.info("4. Verify the model file and repository: https://huggingface.co/Jackaiuser/pup_detect")
         return None
 
 def preprocess_image(image):
