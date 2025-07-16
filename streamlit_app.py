@@ -9,6 +9,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import InputLayer
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import streamlit as st
 from PIL import Image
@@ -117,9 +118,15 @@ def load_breakthrough_model():
                 st.info(f"4. Filename: {MODEL_FILENAME}")
                 return None
         
-        # Load the model
+        # Define custom InputLayer to handle batch_shape compatibility
+        def custom_input_layer(*args, **kwargs):
+            if 'batch_shape' in kwargs:
+                kwargs['batch_input_shape'] = kwargs.pop('batch_shape')
+            return InputLayer(*args, **kwargs)
+        
+        # Load the model with custom_objects
         logger.info(f"Loading breakthrough model: {MODEL_PATH}")
-        model = load_model(MODEL_PATH)
+        model = load_model(MODEL_PATH, custom_objects={'InputLayer': custom_input_layer})
         logger.info("✅ Breakthrough model loaded successfully!")
         
         # Display model info
@@ -130,6 +137,7 @@ def load_breakthrough_model():
     except Exception as e:
         logger.error(f"❌ Error loading model: {str(e)}")
         st.error(f"Failed to load model: {str(e)}")
+        st.info("This may be due to a TensorFlow version mismatch. Try updating TensorFlow with `pip install --upgrade tensorflow`.")
         return None
 
 def preprocess_image(image):
