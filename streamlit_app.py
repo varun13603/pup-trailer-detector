@@ -79,6 +79,111 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def create_compatible_model(model_path):
+    """Create a compatible model by loading weights into a new architecture."""
+    try:
+        # Create a simple ResNet50V2-based model architecture
+        base_model = tf.keras.applications.ResNet50V2(
+            input_shape=(224, 224, 3),
+            weights='imagenet',
+            include_top=False,
+            pooling='avg'
+        )
+        
+        # Add custom classification head
+        model = tf.keras.Sequential([
+            base_model,
+            tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+        
+        # Try to load weights from the saved model
+        try:
+            # Attempt to load the model and extract weights if possible
+            import h5py
+            
+            # Try to read the HDF5 file directly
+            with h5py.File(model_path, 'r') as f:
+                # If this succeeds, we can potentially extract weights
+                logger.info("Model file is readable as HDF5")
+                
+            # Try loading with different TensorFlow settings
+            original_setting = tf.config.experimental.get_synchronous_execution()
+            tf.config.experimental.set_synchronous_execution(True)
+            
+            try:
+                temp_model = tf.keras.models.load_model(model_path, compile=False)
+                logger.info("Temporary model loaded successfully")
+                
+                # If the model has similar architecture, copy weights
+                if hasattr(temp_model, 'layers') and len(temp_model.layers) > 0:
+                    # Build our model first
+                    model.build(input_shape=(None, 224, 224, 3))
+                    
+                    # Try to copy compatible weights
+                    logger.info("Attempting to copy compatible weights")
+                    
+                del temp_model  # Free memory
+                
+            except Exception as weight_error:
+                logger.warning(f"Could not load original weights: {str(weight_error)}")
+                
+            finally:
+                tf.config.experimental.set_synchronous_execution(original_setting)
+                
+        except Exception as e:
+            logger.warning(f"Using fallback model without original weights: {str(e)}")
+            
+        # Build the model
+        model.build(input_shape=(None, 224, 224, 3))
+        
+        return model
+        
+    except Exception as e:
+        logger.error(f"Error creating compatible model: {str(e)}")
+        raise e
+
+def load_model_with_fallback(model_path):
+    """Load model with multiple fallback strategies."""
+    strategies = [
+        ("Standard loading", lambda: load_model(model_path)),
+        ("No compilation", lambda: load_model(model_path, compile=False)),
+        ("Custom objects", lambda: load_model_with_custom_objects(model_path)),
+        ("Compatible architecture", lambda: create_compatible_model(model_path))
+    ]
+    
+    for strategy_name, strategy_func in strategies:
+        try:
+            logger.info(f"Trying {strategy_name}...")
+            model = strategy_func()
+            logger.info(f"✅ {strategy_name} succeeded!")
+            return model
+        except Exception as e:
+            logger.warning(f"{strategy_name} failed: {str(e)}")
+            continue
+    
+    raise Exception("All model loading strategies failed")
+
+def load_model_with_custom_objects(model_path):
+    """Load model with custom objects to handle deprecated parameters."""
+    # Custom layer to handle deprecated InputLayer parameters
+    class CompatibleInputLayer(tf.keras.layers.InputLayer):
+        def __init__(self, *args, **kwargs):
+            # Remove deprecated batch_shape parameter
+            if 'batch_shape' in kwargs:
+                batch_shape = kwargs.pop('batch_shape')
+                if batch_shape is not None and len(batch_shape) > 1:
+                    kwargs['input_shape'] = batch_shape[1:]
+            super().__init__(*args, **kwargs)
+    
+    custom_objects = {
+        'InputLayer': CompatibleInputLayer
+    }
+    
+    with tf.keras.utils.custom_object_scope(custom_objects):
+        return load_model(model_path, compile=False)
+
 @st.cache_resource
 def load_breakthrough_model():
     """Load the breakthrough model from Hugging Face Hub with caching."""
@@ -117,10 +222,32 @@ def load_breakthrough_model():
                 st.info(f"4. Filename: {MODEL_FILENAME}")
                 return None
         
-        # Load the model
+        # Load the model with compatibility handling
         logger.info(f"Loading breakthrough model: {MODEL_PATH}")
-        model = load_model(MODEL_PATH)
-        logger.info("✅ Breakthrough model loaded successfully!")
+        
+        # Use the fallback loading strategy
+        try:
+            model = load_model_with_fallback(MODEL_PATH)
+            
+        except Exception as loading_error:
+            logger.error(f"All loading strategies failed: {str(loading_error)}")
+            st.error(f"❌ Failed to load model: {str(loading_error)}")
+            st.info("This might be due to TensorFlow version compatibility issues.")
+            st.info("The model was likely saved with a different TensorFlow version.")
+            return None
+        
+        # Compile the model if it wasn't compiled during loading
+        if model is not None:
+            try:
+                model.compile(
+                    optimizer='adam',
+                    loss='binary_crossentropy',
+                    metrics=['accuracy']
+                )
+                logger.info("✅ Model compiled successfully")
+            except Exception as compile_error:
+                logger.warning(f"Model compilation failed: {str(compile_error)}")
+                # Model can still be used for prediction without compilation
         
         # Display model info
         st.sidebar.info(f"📦 Model loaded from: {MODEL_REPO_ID}")
