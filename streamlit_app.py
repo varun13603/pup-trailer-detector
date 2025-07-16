@@ -121,12 +121,23 @@ def load_breakthrough_model():
         # Define custom InputLayer to handle batch_shape compatibility
         def custom_input_layer(*args, **kwargs):
             if 'batch_shape' in kwargs:
-                kwargs['batch_input_shape'] = kwargs.pop('batch_shape')
+                kwargs['batch_input_shape'] = kwargs.pop('batch_shape "')
             return InputLayer(*args, **kwargs)
         
+        # Define custom DTypePolicy to handle dtype deserialization
+        class CustomDTypePolicy:
+            def __init__(self, name):
+                self.name = name
+
         # Load the model with custom_objects
         logger.info(f"Loading breakthrough model: {MODEL_PATH}")
-        model = load_model(MODEL_PATH, custom_objects={'InputLayer': custom_input_layer})
+        model = load_model(
+            MODEL_PATH,
+            custom_objects={
+                'InputLayer': custom_input_layer,
+                'DTypePolicy': CustomDTypePolicy
+            }
+        )
         logger.info("✅ Breakthrough model loaded successfully!")
         
         # Display model info
@@ -137,7 +148,8 @@ def load_breakthrough_model():
     except Exception as e:
         logger.error(f"❌ Error loading model: {str(e)}")
         st.error(f"Failed to load model: {str(e)}")
-        st.info("This may be due to a TensorFlow version mismatch. Try updating TensorFlow with `pip install --upgrade tensorflow`.")
+        st.info("This may be due to a TensorFlow version mismatch. Try updating TensorFlow with `pip install --upgrade tensorflow` to version 2.9 or later.")
+        st.info("Alternatively, ensure Keras 3 is installed if using standalone Keras: `pip install keras>=3.0.0`.")
         return None
 
 def preprocess_image(image):
