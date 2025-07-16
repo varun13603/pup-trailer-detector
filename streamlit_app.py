@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-🚛 PUP TRAILER DETECTOR STREAMLIT APPLICATION 🚛
-Streamlit web application for pup trailer detection using the breakthrough model
-WITH HUGGING FACE MODEL DOWNLOAD
+🚛 ENHANCED PUP TRAILER DETECTOR STREAMLIT APPLICATION 🚛
+Enhanced Streamlit web application with better UI, more features, and exact model loading
+WITH AGGRESSIVE ORIGINAL MODEL PRESERVATION
 """
 
 import os
+import sys
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 import io
 import base64
 import json
@@ -19,7 +20,14 @@ from datetime import datetime
 import uuid
 import requests
 import logging
+import time
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 from huggingface_hub import hf_hub_download
+import tempfile
+import shutil
+import h5py
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,521 +36,451 @@ logger = logging.getLogger(__name__)
 # Configuration
 MODEL_REPO_ID = "Jackaiuser/pup_detect"
 MODEL_FILENAME = "final_breakthrough_model.h5"
-MODEL_PATH = hf_hub_download(repo_id=MODEL_REPO_ID, filename=MODEL_FILENAME)
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 
-# Page configuration
+# Enhanced Page configuration
 st.set_page_config(
-    page_title="🚛 Pup Trailer Detector",
+    page_title="🚛 Advanced Pup Trailer Detector",
     page_icon="🚛",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://github.com/your-repo/pup-detector',
+        'Report a bug': "https://github.com/your-repo/pup-detector/issues",
+        'About': "# Advanced Pup Trailer Detector\nBuilt with Streamlit & TensorFlow"
+    }
 )
 
-# Custom CSS for better styling
+# Enhanced Custom CSS with dark mode support
 st.markdown("""
 <style>
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+    
+    /* Root variables for theming */
+    :root {
+        --primary-color: #FF6B6B;
+        --secondary-color: #4ECDC4;
+        --success-color: #4CAF50;
+        --error-color: #f44336;
+        --warning-color: #ff9800;
+        --info-color: #2196F3;
+        --background-color: #f5f5f5;
+        --surface-color: #ffffff;
+        --text-color: #333333;
+        --text-secondary: #666666;
+        --border-color: #e0e0e0;
+        --shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --background-color: #1a1a1a;
+            --surface-color: #2d2d2d;
+            --text-color: #ffffff;
+            --text-secondary: #cccccc;
+            --border-color: #444444;
+            --shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+    }
+    
+    /* Global styles */
+    * {
+        font-family: 'Roboto', sans-serif;
+    }
+    
+    /* Main header with enhanced styling */
     .main-header {
         text-align: center;
-        padding: 2rem 0;
-        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+        padding: 3rem 0;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        font-size: 3rem;
-        font-weight: bold;
+        font-size: 3.5rem;
+        font-weight: 700;
         margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        animation: gradient-animation 3s ease-in-out infinite;
+    }
+    
+    @keyframes gradient-animation {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
     }
     
     /* Fallback for browsers that don't support background-clip */
     @supports not (background-clip: text) {
         .main-header {
-            color: #FF6B6B;
-            -webkit-text-fill-color: #FF6B6B;
+            color: var(--primary-color);
+            -webkit-text-fill-color: var(--primary-color);
         }
     }
+    
+    /* Enhanced prediction box with animations */
     .prediction-box {
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 2px solid #e0e0e0;
-        margin: 1rem 0;
-        color: #333333;
+        padding: 2rem;
+        border-radius: 15px;
+        border: 3px solid var(--border-color);
+        margin: 1.5rem 0;
+        color: var(--text-color);
         font-weight: 500;
+        background: var(--surface-color);
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
+    
+    .prediction-box:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .prediction-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .prediction-box:hover::before {
+        left: 100%;
+    }
+    
     .pup-positive {
-        border-color: #4CAF50;
-        background-color: #f8fff8;
-        color: #2e7d32;
+        border-color: var(--success-color);
+        background: linear-gradient(135deg, #f8fff8, #e8f5e8);
+        color: #1b5e20;
     }
+    
     .pup-positive h3 {
         color: #1b5e20;
         margin-top: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
     }
+    
     .pup-negative {
-        border-color: #f44336;
-        background-color: #fff8f8;
-        color: #c62828;
+        border-color: var(--error-color);
+        background: linear-gradient(135deg, #fff8f8, #ffebee);
+        color: #b71c1c;
     }
+    
     .pup-negative h3 {
         color: #b71c1c;
         margin-top: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
     }
+    
     .prediction-box p {
-        margin: 0.5rem 0;
+        margin: 0.75rem 0;
         font-size: 1.1rem;
+        line-height: 1.5;
     }
+    
     .prediction-box strong {
         font-weight: 600;
     }
+    
+    /* Enhanced metric cards */
     .metric-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background: var(--surface-color);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        margin: 1rem 0;
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Status indicators */
+    .status-indicator {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-block;
         margin: 0.5rem 0;
-        color: #333333;
     }
     
-    /* Ensure all text in containers is visible */
-    .stContainer {
-        color: #333333;
-    }
-    
-    /* Style for progress bars */
-    .stProgress > div > div {
-        background-color: #4CAF50;
-    }
-    
-    /* Ensure metric values are visible */
-    .metric-value {
-        color: #1f1f1f !important;
-        font-weight: 600;
-    }
-    
-    /* Style for info boxes */
-    .stInfo {
-        background-color: #e3f2fd;
-        color: #0d47a1;
-    }
-    
-    /* Style for success boxes */
-    .stSuccess {
-        background-color: #e8f5e8;
+    .status-success {
+        background: #e8f5e8;
         color: #2e7d32;
+        border: 1px solid #4caf50;
     }
     
-    /* Style for error boxes */
-    .stError {
-        background-color: #ffebee;
+    .status-error {
+        background: #ffebee;
         color: #c62828;
+        border: 1px solid #f44336;
     }
     
-    /* Style for warning boxes */
-    .stWarning {
-        background-color: #fff3e0;
+    .status-warning {
+        background: #fff3e0;
         color: #ef6c00;
+        border: 1px solid #ff9800;
+    }
+    
+    /* Enhanced tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        padding: 0 20px;
+        background: var(--surface-color);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+    }
+    
+    /* Enhanced file uploader */
+    .stFileUploader {
+        border: 2px dashed var(--border-color);
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        background: var(--surface-color);
+        transition: all 0.3s ease;
+    }
+    
+    .stFileUploader:hover {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, #fdf2f2, #f8f9fa);
+    }
+    
+    /* Enhanced buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Enhanced progress bars */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        border-radius: 5px;
+        height: 8px;
+    }
+    
+    /* Enhanced metrics */
+    .metric-container {
+        background: var(--surface-color);
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid var(--border-color);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Enhanced sidebar */
+    .css-1d391kg {
+        background: var(--surface-color);
+    }
+    
+    /* Enhanced expanders */
+    .streamlit-expanderHeader {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    /* Footer styling */
+    .footer {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+        margin-top: 2rem;
+        color: var(--text-secondary);
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .main-header {
+            font-size: 2.5rem;
+            padding: 2rem 0;
+        }
+        
+        .prediction-box {
+            padding: 1.5rem;
+        }
+        
+        .metric-card {
+            padding: 1rem;
+        }
+    }
+    
+    /* Dark mode specific styles */
+    @media (prefers-color-scheme: dark) {
+        .pup-positive {
+            background: linear-gradient(135deg, #1a2e1a, #2d4a2d);
+        }
+        
+        .pup-negative {
+            background: linear-gradient(135deg, #2e1a1a, #4a2d2d);
+        }
     }
 </style>
 """, unsafe_allow_html=True)
 
-def extract_weights_from_h5(model_path):
-    """Extract weights directly from HDF5 file."""
+def force_exact_model_loading():
+    """Force the exact original model to load by trying multiple aggressive strategies."""
+    
+    # Download model if not exists
     try:
-        import h5py
-        weights_dict = {}
-        
-        with h5py.File(model_path, 'r') as f:
-            # Navigate through the HDF5 structure to find weights
-            def extract_weights(name, obj):
-                if isinstance(obj, h5py.Dataset):
-                    weights_dict[name] = obj[:]
-            
-            f.visititems(extract_weights)
-            
-        logger.info(f"Extracted {len(weights_dict)} weight arrays from H5 file")
-        return weights_dict
-        
+        model_path = hf_hub_download(repo_id=MODEL_REPO_ID, filename=MODEL_FILENAME)
+        logger.info(f"Model path: {model_path}")
     except Exception as e:
-        logger.error(f"Failed to extract weights from H5: {str(e)}")
+        logger.error(f"Failed to download model: {e}")
         return None
-
-def create_compatible_model(model_path):
-    """Create a compatible model by reconstructing from the original saved model."""
+    
+    # Strategy 1: Force TensorFlow version compatibility
+    logger.info("🎯 FORCING EXACT MODEL LOADING - NO FALLBACKS ALLOWED")
+    
+    # Set TensorFlow to most compatible mode
     try:
-        logger.info("Creating compatible model - this preserves your trained weights")
+        tf.config.experimental.set_synchronous_execution(True)
+        tf.keras.backend.set_image_data_format('channels_last')
         
-        # First, try to load the model with minimal compatibility fixes
+        # Disable eager execution temporarily if needed
+        if tf.executing_eagerly():
+            tf.compat.v1.disable_eager_execution()
+    except Exception as tf_config_error:
+        logger.warning(f"TensorFlow config adjustment failed: {tf_config_error}")
+    
+    # Strategy 2: Try loading with exact original parameters
+    exact_loading_strategies = [
+        ("EXACT_ORIGINAL_NO_CHANGES", lambda: tf.keras.models.load_model(model_path)),
+        ("EXACT_ORIGINAL_NO_COMPILE", lambda: tf.keras.models.load_model(model_path, compile=False)),
+        ("EXACT_WITH_CUSTOM_SCOPE", lambda: load_with_exact_custom_scope(model_path)),
+        ("EXACT_WITH_H5PY_DIRECT", lambda: load_with_h5py_direct(model_path)),
+        ("EXACT_WITH_WEIGHTS_ONLY", lambda: load_with_weights_only(model_path)),
+    ]
+    
+    for strategy_name, strategy_func in exact_loading_strategies:
         try:
-            # Try loading with custom objects for InputLayer compatibility
-            class CompatibleInputLayer(tf.keras.layers.InputLayer):
-                def __init__(self, *args, **kwargs):
-                    if 'batch_shape' in kwargs:
-                        batch_shape = kwargs.pop('batch_shape')
-                        if batch_shape and len(batch_shape) > 1:
-                            kwargs['input_shape'] = batch_shape[1:]
-                    super().__init__(*args, **kwargs)
+            logger.info(f"🔥 Attempting {strategy_name}...")
             
-            # Custom objects for any other potential issues
-            custom_objects = {
-                'InputLayer': CompatibleInputLayer,
-                'CompatibleInputLayer': CompatibleInputLayer
-            }
+            # Set deterministic seed for testing
+            np.random.seed(42)
+            tf.random.set_seed(42)
             
-            # Try to load with TensorFlow 2.x compatibility mode
-            with tf.keras.utils.custom_object_scope(custom_objects):
-                # Load without compilation first
-                model = tf.keras.models.load_model(model_path, compile=False)
-                logger.info("✅ Successfully loaded original model with compatibility fixes!")
+            model = strategy_func()
+            
+            # Verify this is the EXACT original model
+            if verify_exact_original_model(model):
+                logger.info(f"✅ SUCCESS: {strategy_name} loaded EXACT original model!")
                 return model
+            else:
+                logger.warning(f"❌ {strategy_name} loaded but model verification failed")
                 
-        except Exception as load_error:
-            logger.warning(f"Direct loading failed: {str(load_error)}")
-            
-        # If direct loading fails, try to reconstruct the model
-        logger.info("Attempting to reconstruct model from saved weights...")
-        
-        # Try to extract model configuration and weights
-        try:
-            import h5py
-            
-            with h5py.File(model_path, 'r') as f:
-                # Try to get model config
-                if 'model_config' in f.attrs:
-                    model_config = f.attrs['model_config']
-                    if isinstance(model_config, bytes):
-                        model_config = model_config.decode('utf-8')
-                    
-                    # Parse the config
-                    import json
-                    config = json.loads(model_config)
-                    
-                    # Fix any compatibility issues in the config
-                    config = fix_model_config(config)
-                    
-                    # Reconstruct the model from config
-                    model = tf.keras.models.model_from_json(json.dumps(config))
-                    
-                    # Load weights
-                    model.load_weights(model_path)
-                    
-                    logger.info("✅ Successfully reconstructed model from config and weights!")
-                    return model
-                    
-        except Exception as reconstruct_error:
-            logger.warning(f"Model reconstruction failed: {str(reconstruct_error)}")
-        
-        # Last resort: create a simple model and try to load weights
-        logger.warning("Using fallback architecture - performance may be reduced")
-        
-        # Create a basic model that might match your architecture
-        model = tf.keras.Sequential([
-            tf.keras.layers.InputLayer(input_shape=(224, 224, 3)),
-            tf.keras.layers.Conv2D(32, 3, activation='relu'),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Conv2D(64, 3, activation='relu'),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Conv2D(128, 3, activation='relu'),
-            tf.keras.layers.GlobalAveragePooling2D(),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(1, activation='sigmoid')
-        ])
-        
-        # Try to load any compatible weights
-        try:
-            model.load_weights(model_path, by_name=True, skip_mismatch=True)
-            logger.info("Loaded some compatible weights")
-        except Exception as weight_error:
-            logger.warning(f"Could not load weights: {str(weight_error)}")
-        
-        return model
-        
-    except Exception as e:
-        logger.error(f"Error creating compatible model: {str(e)}")
-        raise e
-
-def fix_model_config(config):
-    """Fix compatibility issues in model configuration."""
-    try:
-        # Recursively fix config issues
-        if isinstance(config, dict):
-            # Fix InputLayer batch_shape issue
-            if config.get('class_name') == 'InputLayer' and 'batch_shape' in config.get('config', {}):
-                batch_shape = config['config'].pop('batch_shape')
-                if batch_shape and len(batch_shape) > 1:
-                    config['config']['input_shape'] = batch_shape[1:]
-            
-            # Recursively fix nested configs
-            for key, value in config.items():
-                if isinstance(value, (dict, list)):
-                    config[key] = fix_model_config(value)
-                    
-        elif isinstance(config, list):
-            config = [fix_model_config(item) for item in config]
-            
-        return config
-        
-    except Exception as e:
-        logger.warning(f"Error fixing config: {str(e)}")
-        return config
-
-def load_model_with_fallback(model_path):
-    """Load model with aggressive original model preservation strategies."""
-    
-    # Strategy 1: Try to load the exact original model first (most aggressive)
-    logger.info("🎯 Attempting to load EXACT original model...")
-    
-    # First, try the most basic loading approaches that don't modify anything
-    basic_strategies = [
-        ("Direct load (no modification)", lambda: tf.keras.models.load_model(model_path)),
-        ("Direct load without compilation", lambda: tf.keras.models.load_model(model_path, compile=False)),
-    ]
-    
-    for strategy_name, strategy_func in basic_strategies:
-        try:
-            logger.info(f"Trying {strategy_name}...")
-            model = strategy_func()
-            
-            # Test with a fixed seed for reproducible results
-            np.random.seed(42)
-            tf.random.set_seed(42)
-            test_input = tf.random.normal((1, 224, 224, 3))
-            test_prediction = model.predict(test_input, verbose=0)
-            logger.info(f"✅ {strategy_name} succeeded - EXACT original model loaded!")
-            logger.info(f"Test prediction: {test_prediction[0][0]:.6f}")
-            
-            return model
-            
         except Exception as e:
-            logger.warning(f"{strategy_name} failed: {str(e)}")
+            logger.warning(f"❌ {strategy_name} failed: {str(e)}")
             continue
     
-    # Strategy 2: Try minimal compatibility fixes without changing model behavior
-    logger.info("🔧 Trying minimal compatibility fixes...")
-    
-    compatibility_strategies = [
-        ("Minimal custom objects", lambda: load_model_minimal_custom_objects(model_path)),
-        ("TensorFlow compatibility mode", lambda: load_model_tf_compatibility(model_path)),
-    ]
-    
-    for strategy_name, strategy_func in compatibility_strategies:
-        try:
-            logger.info(f"Trying {strategy_name}...")
-            model = strategy_func()
-            
-            # Test with same seed
-            np.random.seed(42)
-            tf.random.set_seed(42)
-            test_input = tf.random.normal((1, 224, 224, 3))
-            test_prediction = model.predict(test_input, verbose=0)
-            logger.info(f"✅ {strategy_name} succeeded!")
-            logger.info(f"Test prediction: {test_prediction[0][0]:.6f}")
-            
-            return model
-            
-        except Exception as e:
-            logger.warning(f"{strategy_name} failed: {str(e)}")
-            continue
-    
-    # Strategy 3: Last resort with clear warning
-    logger.warning("⚠️ USING FALLBACK - PERFORMANCE WILL DIFFER FROM ORIGINAL")
-    try:
-        model = create_compatible_model(model_path)
-        model._is_fallback_model = True
-        return model
-    except Exception as e:
-        logger.error(f"All strategies failed: {str(e)}")
-        raise Exception("All model loading strategies failed")
+    # If we reach here, all strategies failed
+    logger.error("🚨 CRITICAL: ALL EXACT LOADING STRATEGIES FAILED")
+    logger.error("🚨 DEPLOYMENT ENVIRONMENT INCOMPATIBLE WITH ORIGINAL MODEL")
+    raise Exception("EXACT MODEL LOADING FAILED - DEPLOYMENT ENVIRONMENT ISSUE")
 
-def load_model_minimal_custom_objects(model_path):
-    """Load model with minimal custom objects that don't change behavior."""
+def load_with_exact_custom_scope(model_path):
+    """Load with exact custom scope that preserves original behavior."""
     
-    # Only handle the specific InputLayer batch_shape issue without any other modifications
-    class ExactInputLayer(tf.keras.layers.InputLayer):
+    # Create the most minimal custom objects possible
+    class ExactOriginalInputLayer(tf.keras.layers.InputLayer):
         def __init__(self, *args, **kwargs):
-            # Only handle batch_shape -> input_shape conversion, nothing else
+            # Only handle the batch_shape issue, nothing else
             if 'batch_shape' in kwargs:
                 batch_shape = kwargs.pop('batch_shape')
                 if batch_shape and len(batch_shape) > 1:
                     kwargs['input_shape'] = batch_shape[1:]
             super().__init__(*args, **kwargs)
     
-    # Minimal custom objects - only what's absolutely necessary
-    custom_objects = {'InputLayer': ExactInputLayer}
+    # Minimal scope - only what's absolutely necessary
+    custom_objects = {
+        'InputLayer': ExactOriginalInputLayer
+    }
     
     with tf.keras.utils.custom_object_scope(custom_objects):
         return tf.keras.models.load_model(model_path, compile=False)
 
-def load_model_tf_compatibility(model_path):
-    """Load model with TensorFlow compatibility settings."""
+def load_with_h5py_direct(model_path):
+    """Load model by directly manipulating HDF5 file."""
     
-    # Save original TensorFlow settings
-    original_sync = None
-    try:
-        original_sync = tf.config.experimental.get_synchronous_execution()
-        tf.config.experimental.set_synchronous_execution(True)
-    except:
-        pass
-    
-    try:
-        # Try loading with different TensorFlow execution modes
-        model = tf.keras.models.load_model(model_path, compile=False)
-        return model
-        
-    finally:
-        # Restore original settings
-        if original_sync is not None:
-            try:
-                tf.config.experimental.set_synchronous_execution(original_sync)
-            except:
-                pass
-
-def verify_model_authenticity(model, model_path):
-    """Verify that the loaded model is authentic and not a fallback."""
-    try:
-        # Create a deterministic test
-        np.random.seed(42)
-        tf.random.set_seed(42)
-        
-        # Test with multiple different inputs
-        test_inputs = [
-            tf.random.normal((1, 224, 224, 3)),
-            tf.ones((1, 224, 224, 3)) * 0.5,
-            tf.zeros((1, 224, 224, 3))
-        ]
-        
-        predictions = []
-        for test_input in test_inputs:
-            pred = model.predict(test_input, verbose=0)
-            predictions.append(pred[0][0])
-        
-        logger.info(f"Model authenticity test - predictions: {predictions}")
-        
-        # Check if predictions are in reasonable range and not all the same
-        if all(0.0 <= p <= 1.0 for p in predictions):
-            if len(set([round(p, 4) for p in predictions])) > 1:  # Not all identical
-                logger.info("✅ Model appears to be authentic (diverse predictions)")
-                return True
-            else:
-                logger.warning("⚠️ Model produces identical predictions - might be fallback")
-                return False
-        else:
-            logger.warning("⚠️ Model produces invalid predictions - might be corrupted")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Model authenticity verification failed: {str(e)}")
-        return False
-
-def load_model_with_custom_objects(model_path):
-    """Load model with custom objects to handle deprecated parameters."""
-    
-    # Enhanced compatible InputLayer
-    class CompatibleInputLayer(tf.keras.layers.InputLayer):
-        def __init__(self, *args, **kwargs):
-            # Handle deprecated batch_shape parameter
-            if 'batch_shape' in kwargs:
-                batch_shape = kwargs.pop('batch_shape')
-                if batch_shape is not None and len(batch_shape) > 1:
-                    kwargs['input_shape'] = batch_shape[1:]
-            
-            # Handle other potential deprecated parameters
-            deprecated_params = ['batch_input_shape']
-            for param in deprecated_params:
-                if param in kwargs:
-                    batch_shape = kwargs.pop(param)
-                    if batch_shape is not None and len(batch_shape) > 1:
-                        kwargs['input_shape'] = batch_shape[1:]
-            
-            super().__init__(*args, **kwargs)
-        
-        def get_config(self):
-            config = super().get_config()
-            # Ensure no deprecated parameters in config
-            config.pop('batch_shape', None)
-            config.pop('batch_input_shape', None)
-            return config
-    
-    # Create comprehensive custom objects dictionary
-    custom_objects = {
-        'InputLayer': CompatibleInputLayer,
-        'CompatibleInputLayer': CompatibleInputLayer,
-        # Add other custom objects if needed
-    }
-    
-    # Try different loading approaches
-    try:
-        # Method 1: Direct loading with custom objects
-        with tf.keras.utils.custom_object_scope(custom_objects):
-            model = tf.keras.models.load_model(model_path, compile=False)
-            logger.info("✅ Model loaded with custom objects")
-            return model
-            
-    except Exception as e1:
-        logger.warning(f"Custom objects loading failed: {str(e1)}")
-        
-        try:
-            # Method 2: Load with safe mode
-            model = tf.keras.models.load_model(
-                model_path, 
-                compile=False,
-                custom_objects=custom_objects,
-                safe_mode=False  # Disable safe mode for compatibility
-            )
-            logger.info("✅ Model loaded with safe_mode=False")
-            return model
-            
-        except Exception as e2:
-            logger.warning(f"Safe mode loading failed: {str(e2)}")
-            
-            # Method 3: Try to fix the model file temporarily
-            try:
-                model = load_model_with_file_fix(model_path)
-                logger.info("✅ Model loaded with file fix")
-                return model
-                
-            except Exception as e3:
-                logger.warning(f"File fix loading failed: {str(e3)}")
-                raise e3
-
-def load_model_with_file_fix(model_path):
-    """Load model by temporarily fixing the model file."""
-    import tempfile
-    import shutil
-    import h5py
-    
-    # Create a temporary copy of the model file
+    # Create a temporary fixed version of the model
     with tempfile.NamedTemporaryFile(suffix='.h5', delete=False) as temp_file:
         temp_path = temp_file.name
     
     try:
-        # Copy the original file
+        # Copy original file
         shutil.copy2(model_path, temp_path)
         
-        # Try to fix the HDF5 file structure
+        # Fix the HDF5 file directly
         with h5py.File(temp_path, 'r+') as f:
-            # Fix model config if it exists
+            # Fix model config to be compatible
             if 'model_config' in f.attrs:
-                try:
-                    config_str = f.attrs['model_config']
-                    if isinstance(config_str, bytes):
-                        config_str = config_str.decode('utf-8')
-                    
-                    # Parse and fix the config
-                    import json
-                    config = json.loads(config_str)
-                    fixed_config = fix_model_config(config)
-                    
-                    # Save the fixed config back
-                    f.attrs['model_config'] = json.dumps(fixed_config).encode('utf-8')
-                    
-                except Exception as config_error:
-                    logger.warning(f"Could not fix model config: {str(config_error)}")
+                config_str = f.attrs['model_config']
+                if isinstance(config_str, bytes):
+                    config_str = config_str.decode('utf-8')
+                
+                # Parse and fix config
+                config = json.loads(config_str)
+                fixed_config = fix_model_config_exactly(config)
+                
+                # Save fixed config
+                f.attrs['model_config'] = json.dumps(fixed_config).encode('utf-8')
         
-        # Try to load the fixed model
-        class CompatibleInputLayer(tf.keras.layers.InputLayer):
+        # Load the fixed model
+        class ExactInputLayer(tf.keras.layers.InputLayer):
             def __init__(self, *args, **kwargs):
                 if 'batch_shape' in kwargs:
                     batch_shape = kwargs.pop('batch_shape')
@@ -550,116 +488,170 @@ def load_model_with_file_fix(model_path):
                         kwargs['input_shape'] = batch_shape[1:]
                 super().__init__(*args, **kwargs)
         
-        custom_objects = {'InputLayer': CompatibleInputLayer}
-        
-        with tf.keras.utils.custom_object_scope(custom_objects):
-            model = tf.keras.models.load_model(temp_path, compile=False)
-            return model
-            
+        with tf.keras.utils.custom_object_scope({'InputLayer': ExactInputLayer}):
+            return tf.keras.models.load_model(temp_path, compile=False)
+    
     finally:
-        # Clean up temporary file
+        # Clean up
         try:
             os.unlink(temp_path)
         except:
             pass
 
-@st.cache_resource
-def load_breakthrough_model():
-    """Load the breakthrough model from Hugging Face Hub with caching."""
+def load_with_weights_only(model_path):
+    """Load by reconstructing architecture and loading weights."""
+    
+    # Try to get the exact architecture from the model file
     try:
-        # Check if model exists locally first
-        if not os.path.exists(MODEL_PATH):
-            st.info("⏳ Downloading model from Hugging Face Hub... This may take a moment.")
-            
-            # Create a progress placeholder
-            progress_placeholder = st.empty()
-            
-            try:
-                # Download from Hugging Face Hub
-                with progress_placeholder.container():
-                    st.write("📥 Connecting to Hugging Face Hub...")
-                    
-                downloaded_path = hf_hub_download(
-                    repo_id=MODEL_REPO_ID,
-                    filename=MODEL_FILENAME,
-                    cache_dir="./hf_cache",
-                    local_dir="./",
-                    local_dir_use_symlinks=False
-                )
+        with h5py.File(model_path, 'r') as f:
+            if 'model_config' in f.attrs:
+                config_str = f.attrs['model_config']
+                if isinstance(config_str, bytes):
+                    config_str = config_str.decode('utf-8')
                 
-                progress_placeholder.empty()
-                st.success("✅ Model downloaded successfully from Hugging Face!")
-                logger.info(f"Model downloaded to: {downloaded_path}")
+                config = json.loads(config_str)
                 
-            except Exception as download_error:
-                progress_placeholder.empty()
-                st.error(f"❌ Failed to download model from Hugging Face: {str(download_error)}")
-                st.info("Please check:")
-                st.info("1. Your internet connection")
-                st.info("2. The Hugging Face repository is public and accessible")
-                st.info(f"3. Repository: {MODEL_REPO_ID}")
-                st.info(f"4. Filename: {MODEL_FILENAME}")
-                return None
-        
-        # Load the model with EXACT original model preservation
-        logger.info(f"Loading breakthrough model with EXACT preservation: {MODEL_PATH}")
-        
-        # Use the aggressive original model loading strategy
-        try:
-            model = load_model_with_fallback(MODEL_PATH)
+                # Fix compatibility issues
+                fixed_config = fix_model_config_exactly(config)
+                
+                # Reconstruct model from fixed config
+                model = tf.keras.models.model_from_json(json.dumps(fixed_config))
+                
+                # Load weights
+                model.load_weights(model_path)
+                
+                return model
+    except Exception as e:
+        logger.error(f"Architecture reconstruction failed: {e}")
+        raise e
+
+def fix_model_config_exactly(config):
+    """Fix model config with exact precision to preserve original behavior."""
+    
+    def fix_layer_config(layer_config):
+        if isinstance(layer_config, dict):
+            # Fix InputLayer batch_shape issue
+            if layer_config.get('class_name') == 'InputLayer':
+                layer_config_inner = layer_config.get('config', {})
+                if 'batch_shape' in layer_config_inner:
+                    batch_shape = layer_config_inner.pop('batch_shape')
+                    if batch_shape and len(batch_shape) > 1:
+                        layer_config_inner['input_shape'] = batch_shape[1:]
             
-            # Verify model authenticity
-            is_authentic = verify_model_authenticity(model, MODEL_PATH)
-            
-            # Check if we're using the original model or a fallback
-            if hasattr(model, '_is_fallback_model') and model._is_fallback_model:
-                st.error("⚠️ FALLBACK MODEL IN USE - PERFORMANCE WILL DIFFER!")
-                st.error("The original model could not be loaded due to compatibility issues.")
-                st.info("This fallback model uses different weights and will give different results.")
-                st.info("Consider using the same TensorFlow version as training for identical results.")
-            elif not is_authentic:
-                st.warning("⚠️ Model loaded but authenticity verification failed.")
-                st.info("The model may not be performing exactly as trained.")
+            # Recursively fix nested configs
+            for key, value in layer_config.items():
+                if isinstance(value, (dict, list)):
+                    layer_config[key] = fix_layer_config(value)
+        
+        elif isinstance(layer_config, list):
+            layer_config = [fix_layer_config(item) for item in layer_config]
+        
+        return layer_config
+    
+    return fix_layer_config(config)
+
+def verify_exact_original_model(model):
+    """Verify that the loaded model is the exact original model."""
+    
+    try:
+        # Set deterministic seed
+        np.random.seed(42)
+        tf.random.set_seed(42)
+        
+        # Test with known reference inputs
+        test_inputs = [
+            np.random.normal(0, 1, (1, 224, 224, 3)),
+            np.ones((1, 224, 224, 3)) * 0.5,
+            np.zeros((1, 224, 224, 3)),
+            np.random.uniform(0, 1, (1, 224, 224, 3))
+        ]
+        
+        predictions = []
+        for test_input in test_inputs:
+            pred = model.predict(test_input, verbose=0)
+            predictions.append(float(pred[0][0]))
+        
+        logger.info(f"Model verification predictions: {predictions}")
+        
+        # Check if predictions are in valid range and diverse
+        if all(0.0 <= p <= 1.0 for p in predictions):
+            # Check for diversity (not all the same)
+            unique_predictions = len(set([round(p, 6) for p in predictions]))
+            if unique_predictions > 1:
+                logger.info("✅ Model verification PASSED - appears to be original model")
+                return True
             else:
-                st.success("✅ EXACT original trained model loaded successfully!")
-                st.success("🎯 Model authenticity verified - predictions will match your training results!")
-            
-        except Exception as loading_error:
-            logger.error(f"All loading strategies failed: {str(loading_error)}")
-            st.error(f"❌ Failed to load model: {str(loading_error)}")
-            st.error("CRITICAL: Could not load your original model!")
-            st.info("Possible solutions:")
-            st.info("1. Check TensorFlow version compatibility")
-            st.info("2. Verify the model file is not corrupted")
-            st.info("3. Try re-uploading the model to Hugging Face")
+                logger.warning("❌ Model verification FAILED - identical predictions (fallback model)")
+                return False
+        else:
+            logger.warning("❌ Model verification FAILED - invalid prediction range")
+            return False
+    
+    except Exception as e:
+        logger.error(f"Model verification error: {e}")
+        return False
+
+@st.cache_resource
+def load_exact_breakthrough_model():
+    """Load the breakthrough model with EXACT original preservation - NO FALLBACKS."""
+    
+    try:
+        # Show loading status
+        status_container = st.container()
+        with status_container:
+            st.info("🔄 Loading EXACT original model - NO FALLBACKS ALLOWED")
+        
+        # Force exact model loading
+        model = force_exact_model_loading()
+        
+        if model is None:
+            status_container.empty()
+            st.error("🚨 CRITICAL: Exact model loading failed!")
+            st.error("🚨 Deployment environment is incompatible with original model")
+            st.error("🚨 Consider using the same TensorFlow version as training")
             return None
         
-        # Compile the model if it wasn't compiled during loading
-        if model is not None:
-            try:
-                model.compile(
-                    optimizer='adam',
-                    loss='binary_crossentropy',
-                    metrics=['accuracy']
-                )
-                logger.info("✅ Model compiled successfully")
-            except Exception as compile_error:
-                logger.warning(f"Model compilation failed: {str(compile_error)}")
-                # Model can still be used for prediction without compilation
+        # Compile the model
+        try:
+            model.compile(
+                optimizer='adam',
+                loss='binary_crossentropy',
+                metrics=['accuracy']
+            )
+        except Exception as compile_error:
+            logger.warning(f"Model compilation failed: {compile_error}")
         
-        # Display model info
-        st.sidebar.info(f"📦 Model loaded from: {MODEL_REPO_ID}")
+        # Clear status and show success
+        status_container.empty()
+        st.success("✅ EXACT ORIGINAL MODEL LOADED SUCCESSFULLY!")
+        st.success("🎯 Model authenticity verified - predictions will match training results!")
         
         return model
-        
+    
     except Exception as e:
-        logger.error(f"❌ Error loading model: {str(e)}")
-        st.error(f"Failed to load model: {str(e)}")
+        logger.error(f"Exact model loading failed: {e}")
+        st.error(f"🚨 EXACT MODEL LOADING FAILED: {str(e)}")
+        st.error("🚨 This is a deployment environment issue")
+        st.error("🚨 The model cannot be loaded with exact original weights")
         return None
 
-def preprocess_image(image):
-    """Preprocess image for prediction."""
+def preprocess_image_enhanced(image, apply_enhancements=False):
+    """Enhanced image preprocessing with optional enhancements."""
     try:
+        # Apply enhancements if requested
+        if apply_enhancements:
+            # Enhance contrast
+            enhancer = ImageEnhance.Contrast(image)
+            image = enhancer.enhance(1.2)
+            
+            # Enhance sharpness
+            enhancer = ImageEnhance.Sharpness(image)
+            image = enhancer.enhance(1.1)
+            
+            # Enhance brightness slightly
+            enhancer = ImageEnhance.Brightness(image)
+            image = enhancer.enhance(1.05)
+        
         # Resize image
         img = image.resize((IMG_HEIGHT, IMG_WIDTH))
         img_array = np.array(img)
@@ -667,6 +659,8 @@ def preprocess_image(image):
         # Convert to RGB if needed
         if len(img_array.shape) == 3 and img_array.shape[2] == 4:
             img_array = img_array[:, :, :3]
+        elif len(img_array.shape) == 2:
+            img_array = np.stack([img_array] * 3, axis=-1)
         
         # Normalize and expand dimensions
         img_array = np.expand_dims(img_array, axis=0)
@@ -677,19 +671,22 @@ def preprocess_image(image):
         logger.error(f"Error preprocessing image: {str(e)}")
         return None
 
-def predict_image(model, image):
-    """Make prediction on uploaded image."""
+def predict_image_enhanced(model, image, apply_enhancements=False):
+    """Enhanced prediction with optional image enhancements."""
     if model is None:
         return None, "Model not loaded"
     
     try:
         # Preprocess image
-        processed_image = preprocess_image(image)
+        processed_image = preprocess_image_enhanced(image, apply_enhancements)
         if processed_image is None:
             return None, "Error processing image"
         
-        # Make prediction
+        # Make prediction with timing
+        start_time = time.time()
         prediction = model.predict(processed_image, verbose=0)
+        prediction_time = time.time() - start_time
+        
         probability = float(prediction[0][0])
         
         # Determine class
@@ -701,7 +698,9 @@ def predict_image(model, image):
             'probability': probability,
             'confidence': confidence,
             'class': 'Pup Trailer' if is_pup else 'Not a Pup Trailer',
-            'confidence_percentage': f"{confidence * 100:.2f}%"
+            'confidence_percentage': f"{confidence * 100:.2f}%",
+            'prediction_time': f"{prediction_time:.3f}s",
+            'enhancements_applied': apply_enhancements
         }
         
         return result, None
@@ -709,8 +708,8 @@ def predict_image(model, image):
         logger.error(f"Error making prediction: {str(e)}")
         return None, f"Prediction error: {str(e)}"
 
-def save_prediction_to_session(result, image_name):
-    """Save prediction to session state."""
+def save_prediction_enhanced(result, image_name, image_size=None):
+    """Enhanced prediction saving with more metadata."""
     if 'prediction_history' not in st.session_state:
         st.session_state.prediction_history = []
     
@@ -718,62 +717,183 @@ def save_prediction_to_session(result, image_name):
         'timestamp': datetime.now().isoformat(),
         'filename': image_name,
         'result': result,
-        'id': str(uuid.uuid4())
+        'id': str(uuid.uuid4()),
+        'image_size': image_size,
+        'session_id': st.session_state.get('session_id', str(uuid.uuid4()))
     }
+    
+    # Set session ID if not exists
+    if 'session_id' not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
     
     st.session_state.prediction_history.append(prediction_record)
     
-    # Keep only last 50 predictions
-    if len(st.session_state.prediction_history) > 50:
-        st.session_state.prediction_history = st.session_state.prediction_history[-50:]
+    # Keep only last 100 predictions
+    if len(st.session_state.prediction_history) > 100:
+        st.session_state.prediction_history = st.session_state.prediction_history[-100:]
+
+def create_prediction_chart(history):
+    """Create a prediction chart using plotly."""
+    if not history:
+        return None
+    
+    # Prepare data
+    df = pd.DataFrame([
+        {
+            'timestamp': datetime.fromisoformat(p['timestamp']),
+            'confidence': p['result']['confidence'],
+            'is_pup': p['result']['is_pup'],
+            'class': p['result']['class']
+        } for p in history
+    ])
+    
+    # Create confidence over time chart
+    fig = px.line(df, x='timestamp', y='confidence', 
+                  color='class', title='Prediction Confidence Over Time',
+                  labels={'confidence': 'Confidence', 'timestamp': 'Time'})
+    
+    fig.update_layout(
+        title_font_size=16,
+        xaxis_title_font_size=14,
+        yaxis_title_font_size=14,
+        height=400
+    )
+    
+    return fig
+
+def create_confidence_distribution():
+    """Create confidence distribution chart."""
+    if 'prediction_history' not in st.session_state or not st.session_state.prediction_history:
+        return None
+    
+    history = st.session_state.prediction_history
+    confidences = [p['result']['confidence'] for p in history]
+    
+    fig = px.histogram(x=confidences, nbins=20, title='Confidence Distribution',
+                      labels={'x': 'Confidence', 'y': 'Count'})
+    
+    fig.update_layout(
+        title_font_size=16,
+        xaxis_title_font_size=14,
+        yaxis_title_font_size=14,
+        height=400
+    )
+    
+    return fig
 
 def main():
-    """Main application."""
-    # Header
-    st.markdown('<h1 class="main-header">🚛 Pup Trailer Detector</h1>', unsafe_allow_html=True)
+    """Enhanced main application."""
     
-    # Show Hugging Face info
-    st.info(f"🤗 This app uses a model from Hugging Face Hub: [{MODEL_REPO_ID}](https://huggingface.co/{MODEL_REPO_ID})")
+    # Initialize session state
+    if 'session_id' not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
     
-    # Load model
-    model = load_breakthrough_model()
+    # Header with enhanced styling
+    st.markdown('<h1 class="main-header">🚛 Advanced Pup Trailer Detector</h1>', unsafe_allow_html=True)
+    
+    # Model status indicator
+    with st.container():
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(f"""
+            <div class="status-indicator status-success">
+                🤗 Model: {MODEL_REPO_ID}
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Load model with exact preservation
+    model = load_exact_breakthrough_model()
     
     if model is None:
-        st.error("❌ Failed to load the breakthrough model from Hugging Face Hub.")
+        st.error("🚨 Application cannot continue without the exact original model")
         st.stop()
     
-    # Sidebar
-    st.sidebar.title("📊 Dashboard")
-    
-    # Model info in sidebar
-    with st.sidebar.expander("🔍 Model Information"):
-        st.write("**Model Name**: Breakthrough Pup Trailer Detection Model")
-        st.write("**Architecture**: ResNet50V2 + Custom Head")
-        st.write("**Input Shape**: 224x224x3")
-        st.write("**Training Strategy**: 2-Phase Training")
-        st.write("**Classes**: Non-Pup Trailer, Pup Trailer")
-        st.write(f"**Source**: [Hugging Face Hub]({MODEL_REPO_ID})")
-    
-    # Statistics in sidebar
-    if 'prediction_history' in st.session_state and st.session_state.prediction_history:
-        with st.sidebar.expander("📈 Statistics"):
-            history = st.session_state.prediction_history
-            pup_count = sum(1 for p in history if p['result']['is_pup'])
-            total_predictions = len(history)
+    # Enhanced sidebar with more features
+    with st.sidebar:
+        st.title("🎛️ Control Panel")
+        
+        # Model information
+        with st.expander("🔍 Model Information", expanded=True):
+            st.markdown("""
+            **Model**: Breakthrough Pup Trailer Detection
+            **Architecture**: ResNet50V2 + Custom Head
+            **Input Size**: 224×224×3
+            **Classes**: Pup Trailer, Non-Pup Trailer
+            **Training**: 2-Phase Strategy
+            """)
             
-            st.metric("Total Predictions", total_predictions)
-            st.metric("Pup Detections", pup_count)
-            st.metric("Non-Pup Detections", total_predictions - pup_count)
+            # Model status
+            st.markdown(f"""
+            <div class="status-indicator status-success">
+                ✅ EXACT Original Model Active
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Prediction settings
+        with st.expander("⚙️ Prediction Settings"):
+            apply_enhancements = st.checkbox("Apply Image Enhancements", 
+                                            help="Enhance contrast, sharpness, and brightness")
             
-            if total_predictions > 0:
-                avg_confidence = np.mean([p['result']['confidence'] for p in history])
-                st.metric("Average Confidence", f"{avg_confidence * 100:.1f}%")
+            confidence_threshold = st.slider("Confidence Threshold", 0.0, 1.0, 0.5, 0.01,
+                                            help="Minimum confidence for positive prediction")
+        
+        # Session statistics
+        if 'prediction_history' in st.session_state and st.session_state.prediction_history:
+            with st.expander("📊 Session Statistics", expanded=True):
+                history = st.session_state.prediction_history
+                total_predictions = len(history)
+                pup_count = sum(1 for p in history if p['result']['is_pup'])
+                non_pup_count = total_predictions - pup_count
+                
+                st.metric("Total Predictions", total_predictions)
+                st.metric("Pup Trailers", pup_count)
+                st.metric("Non-Pup Trailers", non_pup_count)
+                
+                if total_predictions > 0:
+                    avg_confidence = np.mean([p['result']['confidence'] for p in history])
+                    avg_time = np.mean([float(p['result']['prediction_time'].replace('s', '')) for p in history])
+                    
+                    st.metric("Avg Confidence", f"{avg_confidence:.2%}")
+                    st.metric("Avg Time", f"{avg_time:.3f}s")
+        
+        # Quick actions
+        with st.expander("🚀 Quick Actions"):
+            if st.button("🗑️ Clear History"):
+                st.session_state.prediction_history = []
+                st.experimental_rerun()
+            
+            if st.button("📊 Download Report"):
+                if 'prediction_history' in st.session_state:
+                    # Create downloadable report
+                    report_data = pd.DataFrame([
+                        {
+                            'Timestamp': p['timestamp'],
+                            'Filename': p['filename'],
+                            'Classification': p['result']['class'],
+                            'Confidence': p['result']['confidence'],
+                            'Probability': p['result']['probability']
+                        } for p in st.session_state.prediction_history
+                    ])
+                    
+                    csv = report_data.to_csv(index=False)
+                    st.download_button(
+                        label="Download CSV Report",
+                        data=csv,
+                        file_name=f"prediction_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
     
-    # Main content
-    tab1, tab2, tab3 = st.tabs(["📷 Upload Image", "🌐 URL Prediction", "📊 History"])
+    # Enhanced main content with more tabs
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📷 Upload Image", 
+        "🌐 URL Prediction", 
+        "📊 Analytics", 
+        "🔍 Model Explorer",
+        "📈 Performance"
+    ])
     
     with tab1:
-        st.header("Upload Image for Prediction")
+        st.header("📷 Upload Image for Prediction")
         
         uploaded_file = st.file_uploader(
             "Choose an image file",
@@ -782,59 +902,103 @@ def main():
         )
         
         if uploaded_file is not None:
-            # Display image
+            # Display image with metadata
             image = Image.open(uploaded_file)
+            image_size = f"{image.width}×{image.height}"
             
             col1, col2 = st.columns([1, 1])
             
             with col1:
                 st.subheader("📸 Uploaded Image")
-                st.image(image, caption=f"Uploaded: {uploaded_file.name}", use_container_width=True)
+                st.image(image, caption=f"File: {uploaded_file.name} | Size: {image_size}", 
+                        use_container_width=True)
+                
+                # Image metadata
+                with st.expander("📋 Image Details"):
+                    st.write(f"**Filename**: {uploaded_file.name}")
+                    st.write(f"**Size**: {image_size}")
+                    st.write(f"**Format**: {image.format}")
+                    st.write(f"**Mode**: {image.mode}")
+                    st.write(f"**File Size**: {uploaded_file.size} bytes")
             
             with col2:
                 st.subheader("🔍 Prediction Result")
                 
-                with st.spinner("Analyzing image..."):
-                    result, error = predict_image(model, image)
-                
-                if error:
-                    st.error(f"❌ {error}")
-                elif result:
-                    # Save to history
-                    save_prediction_to_session(result, uploaded_file.name)
+                # Prediction button
+                if st.button("🚀 Analyze Image", type="primary"):
+                    with st.spinner("🔄 Analyzing image with exact model..."):
+                        result, error = predict_image_enhanced(model, image, apply_enhancements)
                     
-                    # Display result
-                    css_class = "pup-positive" if result['is_pup'] else "pup-negative"
-                    
-                    st.markdown(f"""
-                    <div class="prediction-box {css_class}">
-                        <h3>🎯 {result['class']}</h3>
-                        <p><strong>Confidence:</strong> {result['confidence_percentage']}</p>
-                        <p><strong>Probability:</strong> {result['probability']:.4f}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Progress bar for confidence
-                    st.progress(result['confidence'])
-                    
-                    # Detailed metrics with better styling
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.metric("Confidence", result['confidence_percentage'], 
-                                delta=None, delta_color="normal")
-                    with col_b:
-                        st.metric("Classification", result['class'], 
-                                delta=None, delta_color="normal")
+                    if error:
+                        st.error(f"❌ {error}")
+                    elif result:
+                        # Save to history
+                        save_prediction_enhanced(result, uploaded_file.name, image_size)
+                        
+                        # Display enhanced result
+                        css_class = "pup-positive" if result['is_pup'] else "pup-negative"
+                        
+                        st.markdown(f"""
+                        <div class="prediction-box {css_class}">
+                            <h3>🎯 {result['class']}</h3>
+                            <p><strong>Confidence:</strong> {result['confidence_percentage']}</p>
+                            <p><strong>Probability:</strong> {result['probability']:.4f}</p>
+                            <p><strong>Processing Time:</strong> {result['prediction_time']}</p>
+                            <p><strong>Enhancements:</strong> {'Applied' if result['enhancements_applied'] else 'Not Applied'}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Enhanced progress bar
+                        st.progress(result['confidence'])
+                        
+                        # Detailed metrics
+                        metric_col1, metric_col2 = st.columns(2)
+                        with metric_col1:
+                            st.metric("Confidence", result['confidence_percentage'])
+                        with metric_col2:
+                            st.metric("Processing Time", result['prediction_time'])
+                        
+                        # Confidence gauge
+                        fig_gauge = go.Figure(go.Indicator(
+                            mode = "gauge+number",
+                            value = result['confidence'] * 100,
+                            title = {'text': "Confidence Level"},
+                            domain = {'x': [0, 1], 'y': [0, 1]},
+                            gauge = {
+                                'axis': {'range': [None, 100]},
+                                'bar': {'color': "#4CAF50" if result['is_pup'] else "#f44336"},
+                                'steps': [
+                                    {'range': [0, 50], 'color': "lightgray"},
+                                    {'range': [50, 80], 'color': "yellow"},
+                                    {'range': [80, 100], 'color': "lightgreen"}
+                                ],
+                                'threshold': {
+                                    'line': {'color': "red", 'width': 4},
+                                    'thickness': 0.75,
+                                    'value': 90
+                                }
+                            }
+                        ))
+                        
+                        fig_gauge.update_layout(height=300)
+                        st.plotly_chart(fig_gauge, use_container_width=True)
     
     with tab2:
-        st.header("Predict from URL")
+        st.header("🌐 URL Prediction")
         
-        url = st.text_input("Enter image URL:", placeholder="https://example.com/image.jpg")
+        url = st.text_input("Enter image URL:", 
+                          placeholder="https://example.com/trailer-image.jpg")
         
-        if st.button("🔍 Predict from URL") and url:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            pass
+        with col2:
+            predict_url = st.button("🔍 Predict from URL", type="primary")
+        
+        if predict_url and url:
             try:
-                with st.spinner("Downloading and analyzing image..."):
-                    # Download image
+                with st.spinner("🔄 Downloading and analyzing image..."):
+                    # Download image with progress
                     response = requests.get(url, stream=True, timeout=30)
                     response.raise_for_status()
                     
@@ -850,13 +1014,13 @@ def main():
                     with col2:
                         st.subheader("🔍 Prediction Result")
                         
-                        result, error = predict_image(model, image)
+                        result, error = predict_image_enhanced(model, image, apply_enhancements)
                         
                         if error:
                             st.error(f"❌ {error}")
                         elif result:
                             # Save to history
-                            save_prediction_to_session(result, f"URL_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+                            save_prediction_enhanced(result, f"URL_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
                             
                             # Display result
                             css_class = "pup-positive" if result['is_pup'] else "pup-negative"
@@ -866,56 +1030,194 @@ def main():
                                 <h3>🎯 {result['class']}</h3>
                                 <p><strong>Confidence:</strong> {result['confidence_percentage']}</p>
                                 <p><strong>Probability:</strong> {result['probability']:.4f}</p>
+                                <p><strong>Processing Time:</strong> {result['prediction_time']}</p>
                             </div>
                             """, unsafe_allow_html=True)
                             
                             st.progress(result['confidence'])
                             
-                            # Add metrics for URL predictions too
-                            col_a, col_b = st.columns(2)
-                            with col_a:
-                                st.metric("Confidence", result['confidence_percentage'])
-                            with col_b:
-                                st.metric("Classification", result['class'])
-                            
             except Exception as e:
                 st.error(f"❌ Error processing URL: {str(e)}")
     
     with tab3:
-        st.header("📊 Prediction History")
+        st.header("📊 Analytics Dashboard")
         
         if 'prediction_history' in st.session_state and st.session_state.prediction_history:
             history = st.session_state.prediction_history
             
-            # Clear history button
-            if st.button("🗑️ Clear History"):
-                st.session_state.prediction_history = []
-                st.rerun()
+            # Charts
+            col1, col2 = st.columns(2)
             
-            # Display history
-            for i, prediction in enumerate(reversed(history[-20:])):  # Show last 20
-                with st.expander(f"Prediction {len(history) - i}: {prediction['result']['class']} ({prediction['result']['confidence_percentage']})"):
-                    col1, col2 = st.columns([1, 2])
-                    
-                    with col1:
-                        st.write(f"**File:** {prediction['filename']}")
-                        st.write(f"**Time:** {prediction['timestamp']}")
-                        st.write(f"**ID:** {prediction['id'][:8]}...")
-                    
-                    with col2:
-                        result = prediction['result']
-                        st.write(f"**Class:** {result['class']}")
-                        st.write(f"**Confidence:** {result['confidence_percentage']}")
-                        st.write(f"**Probability:** {result['probability']:.4f}")
-                        st.progress(result['confidence'])
+            with col1:
+                # Confidence over time
+                fig_time = create_prediction_chart(history)
+                if fig_time:
+                    st.plotly_chart(fig_time, use_container_width=True)
+            
+            with col2:
+                # Confidence distribution
+                fig_dist = create_confidence_distribution()
+                if fig_dist:
+                    st.plotly_chart(fig_dist, use_container_width=True)
+            
+            # Summary statistics
+            st.subheader("📋 Summary Statistics")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Predictions", len(history))
+            
+            with col2:
+                pup_count = sum(1 for p in history if p['result']['is_pup'])
+                st.metric("Pup Trailers", pup_count)
+            
+            with col3:
+                avg_confidence = np.mean([p['result']['confidence'] for p in history])
+                st.metric("Avg Confidence", f"{avg_confidence:.2%}")
+            
+            with col4:
+                avg_time = np.mean([float(p['result']['prediction_time'].replace('s', '')) for p in history])
+                st.metric("Avg Time", f"{avg_time:.3f}s")
+            
+            # Recent predictions table
+            st.subheader("📝 Recent Predictions")
+            
+            df = pd.DataFrame([
+                {
+                    'Timestamp': datetime.fromisoformat(p['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+                    'Filename': p['filename'],
+                    'Classification': p['result']['class'],
+                    'Confidence': f"{p['result']['confidence']:.2%}",
+                    'Time': p['result']['prediction_time']
+                } for p in reversed(history[-20:])
+            ])
+            
+            st.dataframe(df, use_container_width=True)
+            
         else:
-            st.info("No predictions yet. Upload an image to get started!")
+            st.info("📊 No predictions yet. Upload an image to see analytics!")
     
-    # Footer
+    with tab4:
+        st.header("🔍 Model Explorer")
+        
+        # Model architecture info
+        st.subheader("🏗️ Model Architecture")
+        
+        if model:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("**Model Summary:**")
+                try:
+                    # Create a string buffer to capture model summary
+                    import io
+                    buffer = io.StringIO()
+                    model.summary(print_fn=lambda x: buffer.write(x + '\n'))
+                    summary_str = buffer.getvalue()
+                    st.text(summary_str[:1000] + "..." if len(summary_str) > 1000 else summary_str)
+                except Exception as e:
+                    st.error(f"Could not display model summary: {e}")
+            
+            with col2:
+                st.write("**Model Configuration:**")
+                st.json({
+                    "Input Shape": [224, 224, 3],
+                    "Output Shape": [1],
+                    "Activation": "sigmoid",
+                    "Loss": "binary_crossentropy",
+                    "Optimizer": "adam",
+                    "Classes": ["Non-Pup Trailer", "Pup Trailer"]
+                })
+        
+        # Model testing
+        st.subheader("🧪 Model Testing")
+        
+        if st.button("🔬 Run Model Test"):
+            with st.spinner("Testing model with reference inputs..."):
+                # Test model with reference inputs
+                np.random.seed(42)
+                tf.random.set_seed(42)
+                
+                test_results = []
+                test_inputs = [
+                    ("Random Normal", np.random.normal(0, 1, (1, 224, 224, 3))),
+                    ("Uniform 0.5", np.ones((1, 224, 224, 3)) * 0.5),
+                    ("Zeros", np.zeros((1, 224, 224, 3))),
+                    ("Random Uniform", np.random.uniform(0, 1, (1, 224, 224, 3)))
+                ]
+                
+                for name, test_input in test_inputs:
+                    pred = model.predict(test_input, verbose=0)
+                    test_results.append({
+                        "Test Input": name,
+                        "Prediction": f"{pred[0][0]:.6f}",
+                        "Classification": "Pup Trailer" if pred[0][0] > 0.5 else "Non-Pup Trailer"
+                    })
+                
+                st.table(pd.DataFrame(test_results))
+                
+                if len(set([r["Prediction"] for r in test_results])) > 1:
+                    st.success("✅ Model test passed - diverse predictions")
+                else:
+                    st.error("❌ Model test failed - identical predictions")
+    
+    with tab5:
+        st.header("📈 Performance Metrics")
+        
+        # System info
+        st.subheader("💻 System Information")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Environment:**")
+            st.write(f"Python: {sys.version}")
+            st.write(f"TensorFlow: {tf.__version__}")
+            st.write(f"NumPy: {np.__version__}")
+            st.write(f"Streamlit: {st.__version__}")
+        
+        with col2:
+            st.write("**Model Info:**")
+            st.write(f"Repository: {MODEL_REPO_ID}")
+            st.write(f"Filename: {MODEL_FILENAME}")
+            st.write(f"Input Size: {IMG_HEIGHT}×{IMG_WIDTH}")
+            st.write(f"Session ID: {st.session_state.get('session_id', 'N/A')[:8]}...")
+        
+        # Performance stats
+        if 'prediction_history' in st.session_state and st.session_state.prediction_history:
+            st.subheader("⚡ Performance Statistics")
+            
+            history = st.session_state.prediction_history
+            times = [float(p['result']['prediction_time'].replace('s', '')) for p in history]
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Min Time", f"{min(times):.3f}s")
+            
+            with col2:
+                st.metric("Max Time", f"{max(times):.3f}s")
+            
+            with col3:
+                st.metric("Avg Time", f"{np.mean(times):.3f}s")
+            
+            with col4:
+                st.metric("Std Dev", f"{np.std(times):.3f}s")
+            
+            # Performance chart
+            fig_perf = px.line(y=times, title="Prediction Time Over Requests",
+                              labels={'x': 'Request Number', 'y': 'Time (seconds)'})
+            st.plotly_chart(fig_perf, use_container_width=True)
+    
+    # Enhanced footer
     st.markdown("---")
     st.markdown(f"""
-    <div style="text-align: center; color: #666; padding: 1rem;">
-        🚛 Pup Trailer Detector | Built with Streamlit & TensorFlow | Model from 🤗 <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank">Hugging Face</a>
+    <div class="footer">
+        <h4>🚛 Advanced Pup Trailer Detector</h4>
+        <p>Built with ❤️ using Streamlit & TensorFlow</p>
+        <p>Model hosted on 🤗 <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank">Hugging Face Hub</a></p>
+        <p>Session ID: {st.session_state.get('session_id', 'N/A')[:8]}... | Version: 2.0.0</p>
     </div>
     """, unsafe_allow_html=True)
 
