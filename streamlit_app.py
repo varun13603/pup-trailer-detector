@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-🚛 PUP TRAILER DETECTOR - DEPLOYMENT VERSION 🚛
-Streamlit application optimized for deployment compatibility
+🚛 PUP TRAILER DETECTOR STREAMLIT APPLICATION 🚛
+Streamlit web application for pup trailer detection using the breakthrough model
+WITH HUGGING FACE MODEL DOWNLOAD
 """
 
 import os
-import sys
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import streamlit as st
 from PIL import Image
 import io
+import base64
+import json
+from datetime import datetime
+import uuid
 import requests
 import logging
 from huggingface_hub import hf_hub_download
-from datetime import datetime
-import uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,69 +28,141 @@ logger = logging.getLogger(__name__)
 # Configuration
 MODEL_REPO_ID = "Jackaiuser/pup_detect"
 MODEL_FILENAME = "final_breakthrough_model.h5"
-HF_TOKEN = os.getenv('HF_TOKEN') or st.secrets.get('HF_TOKEN', None)
+# Get Hugging Face token from environment or Streamlit secrets
+try:
+    HF_TOKEN = st.secrets.get('HF_TOKEN', None) or os.getenv('HF_TOKEN')
+except Exception:
+    HF_TOKEN = os.getenv('HF_TOKEN')
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 
 # Page configuration
 st.set_page_config(
     page_title="🚛 Pup Trailer Detector",
     page_icon="🚛",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Simple CSS
+# Custom CSS for better styling
 st.markdown("""
 <style>
     .main-header {
         text-align: center;
         padding: 2rem 0;
-        color: #FF6B6B;
-        font-size: 2.5rem;
+        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 3rem;
         font-weight: bold;
+        margin-bottom: 2rem;
     }
-    
     .prediction-box {
         padding: 1.5rem;
         border-radius: 10px;
+        border: 2px solid #e0e0e0;
         margin: 1rem 0;
-        text-align: center;
     }
-    
     .pup-positive {
-        background: #d4edda;
-        border: 2px solid #28a745;
-        color: #155724;
+        border-color: #4CAF50;
+        background-color: #f8fff8;
     }
-    
     .pup-negative {
-        background: #f8d7da;
-        border: 2px solid #dc3545;
-        color: #721c24;
+        border-color: #f44336;
+        background-color: #fff8f8;
+    }
+    .metric-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin: 0.5rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
 @st.cache_resource
-def load_model_deployment():
-    """Load the model for deployment."""
+def load_breakthrough_model():
+    """Load the breakthrough model from Hugging Face Hub with caching."""
     try:
-        # Download model
-        model_path = hf_hub_download(repo_id=MODEL_REPO_ID, filename=MODEL_FILENAME)
+        # Debug: Show token status
+        if HF_TOKEN is None:
+            st.error("⚠️ No Hugging Face token found. Private model access requires a token.")
+            st.info("Add your HF_TOKEN to Streamlit secrets or environment variables.")
+            return None
+        else:
+            st.info(f"🔑 Token found: {HF_TOKEN[:10]}...")
         
-        # Load model
-        model = tf.keras.models.load_model(model_path, compile=False)
+        st.info("⏳ Downloading model from Hugging Face Hub... This may take a moment.")
         
-        # Compile model
-        model.compile(
-            optimizer='adam',
-            loss='binary_crossentropy',
-            metrics=['accuracy']
-        )
+        # Create a progress placeholder
+        progress_placeholder = st.empty()
+        
+        try:
+            # Download from Hugging Face Hub with token
+            with progress_placeholder.container():
+                st.write("📥 Connecting to Hugging Face Hub...")
+                st.write(f"Repository: {MODEL_REPO_ID}")
+                st.write(f"Filename: {MODEL_FILENAME}")
+                
+            model_path = hf_hub_download(
+                repo_id=MODEL_REPO_ID,
+                filename=MODEL_FILENAME,
+                token=HF_TOKEN,
+                cache_dir="./hf_cache"
+            )
+            
+            progress_placeholder.empty()
+            st.success("✅ Model downloaded successfully from Hugging Face!")
+            logger.info(f"Model downloaded to: {model_path}")
+            
+        except Exception as download_error:
+            progress_placeholder.empty()
+            error_msg = str(download_error)
+            st.error(f"❌ Failed to download model from Hugging Face: {error_msg}")
+            
+            # Provide specific error guidance
+            if "401" in error_msg or "Unauthorized" in error_msg:
+                st.error("🔒 Authentication failed. Please check your token.")
+            elif "404" in error_msg or "Not Found" in error_msg:
+                st.error("📁 Model repository or file not found.")
+            elif "403" in error_msg or "Forbidden" in error_msg:
+                st.error("🚫 Access denied. Check if you have permission to access this model.")
+            
+            st.info("Please check:")
+            st.info("1. Your internet connection")
+            st.info("2. The Hugging Face repository exists and you have access")
+            st.info("3. Your Hugging Face token has the correct permissions")
+            st.info(f"4. Repository: {MODEL_REPO_ID}")
+            st.info(f"5. Filename: {MODEL_FILENAME}")
+            st.info(f"6. Token starts with: {HF_TOKEN[:10] if HF_TOKEN else 'None'}...")
+            return None
+        
+        # Load the model
+        logger.info(f"Loading breakthrough model: {model_path}")
+        with st.spinner("Loading TensorFlow model..."):
+            model = load_model(model_path)
+        logger.info("✅ Breakthrough model loaded successfully!")
+        
+        # Display model info
+        st.sidebar.info(f"📦 Model loaded from: {MODEL_REPO_ID}")
         
         return model
+        
     except Exception as e:
-        logger.error(f"Error loading model: {e}")
+        error_msg = str(e)
+        logger.error(f"❌ Error loading model: {error_msg}")
+        st.error(f"❌ Failed to load model: {error_msg}")
+        
+        # Show debug info
+        st.error("Debug information:")
+        st.error(f"- Repository: {MODEL_REPO_ID}")
+        st.error(f"- Filename: {MODEL_FILENAME}")
+        st.error(f"- Token available: {HF_TOKEN is not None}")
+        st.error(f"- Error type: {type(e).__name__}")
+        
         return None
 
 def preprocess_image(image):
@@ -100,8 +175,6 @@ def preprocess_image(image):
         # Convert to RGB if needed
         if len(img_array.shape) == 3 and img_array.shape[2] == 4:
             img_array = img_array[:, :, :3]
-        elif len(img_array.shape) == 2:
-            img_array = np.stack([img_array] * 3, axis=-1)
         
         # Normalize and expand dimensions
         img_array = np.expand_dims(img_array, axis=0)
@@ -109,11 +182,11 @@ def preprocess_image(image):
         
         return img_array
     except Exception as e:
-        logger.error(f"Error preprocessing image: {e}")
+        logger.error(f"Error preprocessing image: {str(e)}")
         return None
 
 def predict_image(model, image):
-    """Make prediction on image."""
+    """Make prediction on uploaded image."""
     if model is None:
         return None, "Model not loaded"
     
@@ -141,52 +214,119 @@ def predict_image(model, image):
         
         return result, None
     except Exception as e:
-        logger.error(f"Error making prediction: {e}")
+        logger.error(f"Error making prediction: {str(e)}")
         return None, f"Prediction error: {str(e)}"
+
+def save_prediction_to_session(result, image_name):
+    """Save prediction to session state."""
+    if 'prediction_history' not in st.session_state:
+        st.session_state.prediction_history = []
+    
+    prediction_record = {
+        'timestamp': datetime.now().isoformat(),
+        'filename': image_name,
+        'result': result,
+        'id': str(uuid.uuid4())
+    }
+    
+    st.session_state.prediction_history.append(prediction_record)
+    
+    # Keep only last 50 predictions
+    if len(st.session_state.prediction_history) > 50:
+        st.session_state.prediction_history = st.session_state.prediction_history[-50:]
 
 def main():
     """Main application."""
-    
     # Header
     st.markdown('<h1 class="main-header">🚛 Pup Trailer Detector</h1>', unsafe_allow_html=True)
     
+    # Show Hugging Face info
+    st.info(f"🤗 This app uses a model from Hugging Face Hub: [{MODEL_REPO_ID}](https://huggingface.co/{MODEL_REPO_ID})")
+    
+    # Debug information
+    with st.expander("🔧 Debug Information"):
+        st.write(f"**Repository:** {MODEL_REPO_ID}")
+        st.write(f"**Filename:** {MODEL_FILENAME}")
+        st.write(f"**Token available:** {HF_TOKEN is not None}")
+        if HF_TOKEN:
+            st.write(f"**Token prefix:** {HF_TOKEN[:10]}...")
+        st.write("**Environment variables:**")
+        st.write(f"- HF_TOKEN in env: {'HF_TOKEN' in os.environ}")
+        st.write("**Streamlit secrets:**")
+        try:
+            st.write(f"- HF_TOKEN in secrets: {'HF_TOKEN' in st.secrets}")
+        except Exception as e:
+            st.write(f"- Secrets error: {e}")
+    
     # Load model
-    with st.spinner("Loading model..."):
-        model = load_model_deployment()
+    model = load_breakthrough_model()
     
     if model is None:
-        st.error("❌ Failed to load model. Please try again later.")
-        return
+        st.error("❌ Failed to load the breakthrough model from Hugging Face Hub.")
+        st.info("Please check the debug information above and try refreshing the page.")
+        st.stop()
     
-    st.success("✅ Model loaded successfully!")
+    # Sidebar
+    st.sidebar.title("📊 Dashboard")
     
-    # File uploader
-    uploaded_file = st.file_uploader(
-        "Choose an image file",
-        type=['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'],
-        help="Upload an image of a trailer to detect if it's a pup trailer"
-    )
+    # Model info in sidebar
+    with st.sidebar.expander("🔍 Model Information"):
+        st.write("**Model Name**: Breakthrough Pup Trailer Detection Model")
+        st.write("**Architecture**: ResNet50V2 + Custom Head")
+        st.write("**Input Shape**: 224x224x3")
+        st.write("**Training Strategy**: 2-Phase Training")
+        st.write("**Classes**: Non-Pup Trailer, Pup Trailer")
+        st.write(f"**Source**: [Hugging Face Hub]({MODEL_REPO_ID})")
     
-    if uploaded_file is not None:
-        # Display image
-        image = Image.open(uploaded_file)
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("📸 Uploaded Image")
-            st.image(image, caption=f"File: {uploaded_file.name}")
-        
-        with col2:
-            st.subheader("🔍 Prediction")
+    # Statistics in sidebar
+    if 'prediction_history' in st.session_state and st.session_state.prediction_history:
+        with st.sidebar.expander("📈 Statistics"):
+            history = st.session_state.prediction_history
+            pup_count = sum(1 for p in history if p['result']['is_pup'])
+            total_predictions = len(history)
             
-            if st.button("🚀 Analyze Image", type="primary"):
+            st.metric("Total Predictions", total_predictions)
+            st.metric("Pup Detections", pup_count)
+            st.metric("Non-Pup Detections", total_predictions - pup_count)
+            
+            if total_predictions > 0:
+                avg_confidence = np.mean([p['result']['confidence'] for p in history])
+                st.metric("Average Confidence", f"{avg_confidence * 100:.1f}%")
+    
+    # Main content
+    tab1, tab2, tab3 = st.tabs(["📷 Upload Image", "🌐 URL Prediction", "📊 History"])
+    
+    with tab1:
+        st.header("Upload Image for Prediction")
+        
+        uploaded_file = st.file_uploader(
+            "Choose an image file",
+            type=['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'],
+            help="Upload an image of a trailer to detect if it's a pup trailer"
+        )
+        
+        if uploaded_file is not None:
+            # Display image
+            image = Image.open(uploaded_file)
+            
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.subheader("📸 Uploaded Image")
+                st.image(image, caption=f"Uploaded: {uploaded_file.name}", use_container_width=True)
+            
+            with col2:
+                st.subheader("🔍 Prediction Result")
+                
                 with st.spinner("Analyzing image..."):
                     result, error = predict_image(model, image)
                 
                 if error:
                     st.error(f"❌ {error}")
                 elif result:
+                    # Save to history
+                    save_prediction_to_session(result, uploaded_file.name)
+                    
                     # Display result
                     css_class = "pup-positive" if result['is_pup'] else "pup-negative"
                     
@@ -198,16 +338,101 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Progress bar
+                    # Progress bar for confidence
                     st.progress(result['confidence'])
                     
-                    # Metrics
-                    st.metric("Confidence", result['confidence_percentage'])
+                    # Detailed metrics
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.metric("Confidence", result['confidence_percentage'])
+                    with col_b:
+                        st.metric("Classification", result['class'])
+    
+    with tab2:
+        st.header("Predict from URL")
+        
+        url = st.text_input("Enter image URL:", placeholder="https://example.com/image.jpg")
+        
+        if st.button("🔍 Predict from URL") and url:
+            try:
+                with st.spinner("Downloading and analyzing image..."):
+                    # Download image
+                    response = requests.get(url, stream=True, timeout=30)
+                    response.raise_for_status()
+                    
+                    # Open image
+                    image = Image.open(io.BytesIO(response.content))
+                    
+                    col1, col2 = st.columns([1, 1])
+                    
+                    with col1:
+                        st.subheader("📸 Downloaded Image")
+                        st.image(image, caption="Downloaded from URL", use_container_width=True)
+                    
+                    with col2:
+                        st.subheader("🔍 Prediction Result")
+                        
+                        result, error = predict_image(model, image)
+                        
+                        if error:
+                            st.error(f"❌ {error}")
+                        elif result:
+                            # Save to history
+                            save_prediction_to_session(result, f"URL_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+                            
+                            # Display result
+                            css_class = "pup-positive" if result['is_pup'] else "pup-negative"
+                            
+                            st.markdown(f"""
+                            <div class="prediction-box {css_class}">
+                                <h3>🎯 {result['class']}</h3>
+                                <p><strong>Confidence:</strong> {result['confidence_percentage']}</p>
+                                <p><strong>Probability:</strong> {result['probability']:.4f}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            st.progress(result['confidence'])
+                            
+            except Exception as e:
+                st.error(f"❌ Error processing URL: {str(e)}")
+    
+    with tab3:
+        st.header("📊 Prediction History")
+        
+        if 'prediction_history' in st.session_state and st.session_state.prediction_history:
+            history = st.session_state.prediction_history
+            
+            # Clear history button
+            if st.button("🗑️ Clear History"):
+                st.session_state.prediction_history = []
+                st.rerun()
+            
+            # Display history
+            for i, prediction in enumerate(reversed(history[-20:])):  # Show last 20
+                with st.expander(f"Prediction {len(history) - i}: {prediction['result']['class']} ({prediction['result']['confidence_percentage']})"):
+                    col1, col2 = st.columns([1, 2])
+                    
+                    with col1:
+                        st.write(f"**File:** {prediction['filename']}")
+                        st.write(f"**Time:** {prediction['timestamp']}")
+                        st.write(f"**ID:** {prediction['id'][:8]}...")
+                    
+                    with col2:
+                        result = prediction['result']
+                        st.write(f"**Class:** {result['class']}")
+                        st.write(f"**Confidence:** {result['confidence_percentage']}")
+                        st.write(f"**Probability:** {result['probability']:.4f}")
+                        st.progress(result['confidence'])
+        else:
+            st.info("No predictions yet. Upload an image to get started!")
     
     # Footer
     st.markdown("---")
-    st.markdown("Built with ❤️ using Streamlit & TensorFlow")
-    st.markdown(f"Model: {MODEL_REPO_ID}")
+    st.markdown(f"""
+    <div style="text-align: center; color: #666; padding: 1rem;">
+        🚛 Pup Trailer Detector | Built with Streamlit & TensorFlow | Model from 🤗 <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank">Hugging Face</a>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
