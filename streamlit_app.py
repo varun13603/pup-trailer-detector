@@ -96,18 +96,21 @@ st.markdown("""
 def load_breakthrough_model():
     """Load the breakthrough model from Hugging Face Hub with caching."""
     try:
-        # Debug: Show token status
+        # Check if we have a token for private model
         if HF_TOKEN is None:
             st.error("⚠️ No Hugging Face token found. Private model access requires a token.")
             st.info("Add your HF_TOKEN to Streamlit secrets or environment variables.")
             return None
-        else:
-            st.info(f"🔑 Token found: {HF_TOKEN[:10]}...")
         
-        st.info("⏳ Downloading model from Hugging Face Hub... This may take a moment.")
-        
-        # Create a progress placeholder
+        # Create placeholders for loading messages
+        token_placeholder = st.empty()
+        download_placeholder = st.empty()
         progress_placeholder = st.empty()
+        success_placeholder = st.empty()
+        
+        # Show loading messages
+        token_placeholder.info(f"🔑 Token found: {HF_TOKEN[:10]}...")
+        download_placeholder.info("⏳ Downloading model from Hugging Face Hub... This may take a moment.")
         
         try:
             # Download from Hugging Face Hub with token
@@ -123,12 +126,18 @@ def load_breakthrough_model():
                 cache_dir="./hf_cache"
             )
             
+            # Clear download messages
             progress_placeholder.empty()
-            st.success("✅ Model downloaded successfully from Hugging Face!")
+            success_placeholder.success("✅ Model downloaded successfully from Hugging Face!")
             logger.info(f"Model downloaded to: {model_path}")
             
         except Exception as download_error:
+            # Clear loading messages on error
+            token_placeholder.empty()
+            download_placeholder.empty()
             progress_placeholder.empty()
+            success_placeholder.empty()
+            
             error_msg = str(download_error)
             st.error(f"❌ Failed to download model from Hugging Face: {error_msg}")
             
@@ -155,8 +164,14 @@ def load_breakthrough_model():
             model = load_model(model_path)
         logger.info("✅ Breakthrough model loaded successfully!")
         
-        # Display model info
-        st.sidebar.info(f"📦 Model loaded from: {MODEL_REPO_ID}")
+        # Clear all loading messages once model is loaded
+        token_placeholder.empty()
+        download_placeholder.empty()
+        progress_placeholder.empty()
+        success_placeholder.empty()
+        
+        # Display model info in sidebar only
+        st.sidebar.success(f"📦 Model loaded from: {MODEL_REPO_ID}")
         
         return model
         
@@ -249,31 +264,48 @@ def main():
     # Header
     st.markdown('<h1 class="main-header">🚛 Pup Trailer Detector</h1>', unsafe_allow_html=True)
     
-    # Show Hugging Face info
-    st.info(f"🤗 This app uses a model from Hugging Face Hub: [{MODEL_REPO_ID}](https://huggingface.co/{MODEL_REPO_ID})")
-    
-    # Debug information
-    with st.expander("🔧 Debug Information"):
-        st.write(f"**Repository:** {MODEL_REPO_ID}")
-        st.write(f"**Filename:** {MODEL_FILENAME}")
-        st.write(f"**Token available:** {HF_TOKEN is not None}")
-        if HF_TOKEN:
-            st.write(f"**Token prefix:** {HF_TOKEN[:10]}...")
-        st.write("**Environment variables:**")
-        st.write(f"- HF_TOKEN in env: {'HF_TOKEN' in os.environ}")
-        st.write("**Streamlit secrets:**")
-        try:
-            st.write(f"- HF_TOKEN in secrets: {'HF_TOKEN' in st.secrets}")
-        except Exception as e:
-            st.write(f"- Secrets error: {e}")
-    
-    # Load model
+    # Load model first
     model = load_breakthrough_model()
     
     if model is None:
         st.error("❌ Failed to load the breakthrough model from Hugging Face Hub.")
+        # Show debug information only on error
+        with st.expander("🔧 Debug Information"):
+            st.write(f"**Repository:** {MODEL_REPO_ID}")
+            st.write(f"**Filename:** {MODEL_FILENAME}")
+            st.write(f"**Token available:** {HF_TOKEN is not None}")
+            if HF_TOKEN:
+                st.write(f"**Token prefix:** {HF_TOKEN[:10]}...")
+            st.write("**Environment variables:**")
+            st.write(f"- HF_TOKEN in env: {'HF_TOKEN' in os.environ}")
+            st.write("**Streamlit secrets:**")
+            try:
+                st.write(f"- HF_TOKEN in secrets: {'HF_TOKEN' in st.secrets}")
+            except Exception as e:
+                st.write(f"- Secrets error: {e}")
         st.info("Please check the debug information above and try refreshing the page.")
         st.stop()
+    
+    # Show minimal info about the model source (only after successful load)
+    st.sidebar.markdown(f"""
+    **Model Source:** [🤗 Hugging Face Hub]({MODEL_REPO_ID})
+    """)
+    
+    # Optional debug info (collapsed by default)
+    if st.sidebar.checkbox("Show Debug Info", value=False):
+        with st.expander("🔧 Debug Information"):
+            st.write(f"**Repository:** {MODEL_REPO_ID}")
+            st.write(f"**Filename:** {MODEL_FILENAME}")
+            st.write(f"**Token available:** {HF_TOKEN is not None}")
+            if HF_TOKEN:
+                st.write(f"**Token prefix:** {HF_TOKEN[:10]}...")
+            st.write("**Environment variables:**")
+            st.write(f"- HF_TOKEN in env: {'HF_TOKEN' in os.environ}")
+            st.write("**Streamlit secrets:**")
+            try:
+                st.write(f"- HF_TOKEN in secrets: {'HF_TOKEN' in st.secrets}")
+            except Exception as e:
+                st.write(f"- Secrets error: {e}")
     
     # Sidebar
     st.sidebar.title("📊 Dashboard")
