@@ -178,13 +178,8 @@ st.markdown("""
     
     /* Animated progress bar */
     .stProgress .st-bo {
-        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
-        animation: progress-glow 2s ease infinite;
-    }
-    
-    @keyframes progress-glow {
-        0%, 100% { box-shadow: 0 0 5px rgba(76,175,80,0.5); }
-        50% { box-shadow: 0 0 20px rgba(76,175,80,0.8); }
+        background: #007bff;
+        border-radius: 10px;
     }
     
     /* Fade in animation */
@@ -377,18 +372,17 @@ st.markdown("""
     
     /* Stats cards animation */
     .stats-card {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        background: #007bff;
         color: white;
         padding: 1rem;
         border-radius: 10px;
         text-align: center;
         margin: 0.5rem 0;
-        animation: pulse 2s infinite;
+        transition: transform 0.3s ease;
     }
     
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+    .stats-card:hover {
+        transform: translateY(-2px);
     }
     
     /* Custom scrollbar */
@@ -402,12 +396,12 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+        background: #007bff;
         border-radius: 10px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(45deg, #4ECDC4, #FF6B6B);
+        background: #0056b3;
     }
     
     /* Tooltip styles */
@@ -733,7 +727,7 @@ def main():
     # Success message with animation
     st.markdown("""
     <div style="text-align: center; margin-bottom: 2rem; animation: slideInRight 0.5s ease-out;">
-        <div style="background: linear-gradient(90deg, #4CAF50, #45a049); color: white; padding: 1rem; border-radius: 10px; display: inline-block;">
+        <div style="background: #28a745; color: white; padding: 1rem; border-radius: 10px; display: inline-block;">
             ✅ Model loaded successfully! Ready for predictions
         </div>
     </div>
@@ -741,15 +735,15 @@ def main():
     
     # Enhanced sidebar with better organization
     st.sidebar.markdown("""
-    <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 10px; margin-bottom: 1rem;">
-        <h2 style="margin: 0; font-size: 1.5rem;">📊 Dashboard</h2>
-        <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Control Panel</p>
+    <div style="text-align: center; padding: 1rem; background: #ffffff; color: #333; border-radius: 10px; margin-bottom: 1rem; border: 1px solid #dee2e6;">
+        <h2 style="margin: 0; font-size: 1.5rem; color: #007bff;">📊 Dashboard</h2>
+        <p style="margin: 0.5rem 0 0 0; color: #666;">Control Panel</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Model source info in sidebar
     st.sidebar.markdown(f"""
-    <div style="background: linear-gradient(135deg, #FF6B6B, #4ECDC4); color: white; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+    <div style="background: #007bff; color: white; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
         <strong>🤗 Model Source:</strong><br>
         <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank" style="color: white; text-decoration: underline;">
             Hugging Face Hub
@@ -776,7 +770,7 @@ def main():
     # Enhanced model info in sidebar
     with st.sidebar.expander("🔍 Model Information", expanded=True):
         st.markdown("""
-        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <div style="background: #ffffff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e9ecef;">
             <strong>🧠 Model Details:</strong><br>
             • <strong>Name:</strong> Breakthrough Pup Trailer Detector<br>
             • <strong>Architecture:</strong> ResNet50V2 + Custom Head<br>
@@ -797,11 +791,11 @@ def main():
             # Enhanced metrics with colors
             st.markdown(f"""
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
-                <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                <div style="background: #007bff; color: white; padding: 1rem; border-radius: 8px; text-align: center;">
                     <h3 style="margin: 0; font-size: 1.5rem;">{total_predictions}</h3>
                     <p style="margin: 0; font-size: 0.8rem;">Total Predictions</p>
                 </div>
-                <div style="background: linear-gradient(135deg, #27ae60, #229954); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                <div style="background: #28a745; color: white; padding: 1rem; border-radius: 8px; text-align: center;">
                     <h3 style="margin: 0; font-size: 1.5rem;">{pup_count}</h3>
                     <p style="margin: 0; font-size: 0.8rem;">Pup Detected</p>
                 </div>
@@ -809,7 +803,7 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+            <div style="background: #dc3545; color: white; padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
                 <h3 style="margin: 0; font-size: 1.5rem;">{total_predictions - pup_count}</h3>
                 <p style="margin: 0; font-size: 0.8rem;">Non-Pup Detected</p>
             </div>
@@ -818,7 +812,7 @@ def main():
             if total_predictions > 0:
                 avg_confidence = np.mean([p['result']['confidence'] for p in history])
                 st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                <div style="background: #6f42c1; color: white; padding: 1rem; border-radius: 8px; text-align: center;">
                     <h3 style="margin: 0; font-size: 1.5rem;">{avg_confidence * 100:.1f}%</h3>
                     <p style="margin: 0; font-size: 0.8rem;">Avg Confidence</p>
                 </div>
@@ -1098,7 +1092,7 @@ def main():
         
         # Enhanced about section
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 2rem; border-radius: 15px; margin-bottom: 2rem;">
+        <div style="background: #ffffff; padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid #e9ecef;">
             <h4 style="color: #333; margin-bottom: 1rem;">🎯 What is a Pup Trailer?</h4>
             <p style="color: #666; line-height: 1.6;">
                 A pup trailer is a short semi-trailer that is typically pulled behind a truck or another trailer. 
@@ -1127,7 +1121,7 @@ def main():
         
         with col1:
             st.markdown("""
-            <div style="background: linear-gradient(135deg, #FF6B6B, #ff5252); color: white; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+            <div style="background: #dc3545; color: white; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
                 <h4 style="margin: 0 0 1rem 0;">🚀 Features</h4>
                 <ul style="margin: 0; padding-left: 1.5rem;">
                     <li>Real-time image analysis</li>
@@ -1141,7 +1135,7 @@ def main():
         
         with col2:
             st.markdown("""
-            <div style="background: linear-gradient(135deg, #4ECDC4, #26c6da); color: white; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+            <div style="background: #007bff; color: white; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
                 <h4 style="margin: 0 0 1rem 0;">💡 Tips for Best Results</h4>
                 <ul style="margin: 0; padding-left: 1.5rem;">
                     <li>Use clear, well-lit images</li>
@@ -1155,7 +1149,7 @@ def main():
     
     # Enhanced footer
     st.markdown("""
-    <div class="footer">
+    <div class="footer" style="background: #343a40; color: white; padding: 2rem; border-radius: 15px; text-align: center; margin-top: 3rem; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);">
         <h3 style="margin: 0 0 1rem 0;">🚛 Pup Trailer Detector</h3>
         <p style="margin: 0 0 1rem 0; opacity: 0.9;">
             Built with ❤️ using Streamlit & TensorFlow
