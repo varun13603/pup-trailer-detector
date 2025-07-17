@@ -92,7 +92,8 @@ st.markdown("""
         border-radius: 15px;
         border: 2px solid #e0e0e0;
         margin: 1rem 0;
-        color: #333 !important;
+        color: #FFFFFF !important;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
         box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         backdrop-filter: blur(10px);
         transition: all 0.3s ease;
@@ -125,45 +126,46 @@ st.markdown("""
     
     .pup-positive {
         border-color: #4CAF50;
-        background: linear-gradient(135deg, #f8fff8, #e8f5e8);
-        color: #2e7d32 !important;
+        background: linear-gradient(135deg, #2E7D32, #4CAF50) !important;
+        color: #FFFFFF !important;
     }
     
     .pup-positive h3 {
-        color: #2e7d32 !important;
-        text-shadow: 1px 1px 2px rgba(46,125,50,0.3);
+        color: #FFFFFF !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
     .pup-positive p {
-        color: #2e7d32 !important;
+        color: #E8F5E8 !important;
     }
     
     .pup-positive strong {
-        color: #1b5e20 !important;
+        color: #FFFFFF !important;
     }
     
     .pup-negative {
         border-color: #f44336;
-        background: linear-gradient(135deg, #fff8f8, #ffe8e8);
-        color: #c62828 !important;
+        background: linear-gradient(135deg, #D32F2F, #F44336) !important;
+        color: #FFFFFF !important;
     }
     
     .pup-negative h3 {
-        color: #c62828 !important;
-        text-shadow: 1px 1px 2px rgba(198,40,40,0.3);
+        color: #FFFFFF !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
     .pup-negative p {
-        color: #c62828 !important;
+        color: #FFE8E8 !important;
     }
     
     .pup-negative strong {
-        color: #b71c1c !important;
+        color: #FFFFFF !important;
     }
     
     /* Enhanced metric cards */
     .metric-card {
-        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        background: linear-gradient(135deg, #FF6B6B, #4ECDC4) !important;
+        color: #FFFFFF !important;
         padding: 1.5rem;
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.1);
@@ -220,7 +222,8 @@ st.markdown("""
     
     /* Enhanced tabs */
     .stTabs [data-baseweb="tab-list"] {
-        background: linear-gradient(90deg, #f8f9fa, #e9ecef);
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        color: #FFFFFF !important;
         border-radius: 10px;
         padding: 0.5rem;
     }
@@ -228,10 +231,11 @@ st.markdown("""
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         transition: all 0.3s ease;
+        color: #FFFFFF !important;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255,255,255,0.8);
+        background: rgba(255,255,255,0.2) !important;
     }
     
     /* Enhanced file uploader */
@@ -240,18 +244,20 @@ st.markdown("""
         border-radius: 15px;
         padding: 2rem;
         transition: all 0.3s ease;
-        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        color: #FFFFFF !important;
     }
     
     .stFileUploader:hover {
         border-color: #FF6B6B;
-        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        background: linear-gradient(135deg, #FF6B6B, #4ECDC4) !important;
         transform: translateY(-2px);
     }
     
     /* Enhanced sidebar */
     .css-1d391kg {
-        background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+        background: linear-gradient(180deg, #667eea, #764ba2) !important;
+        color: #FFFFFF !important;
     }
     
     /* General text visibility fixes */
@@ -260,41 +266,45 @@ st.markdown("""
     }
     
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
-        color: #333 !important;
+        color: #2C3E50 !important;
     }
     
     .stMarkdown p, .stMarkdown li, .stMarkdown span {
-        color: #666 !important;
+        color: #34495E !important;
     }
     
     .stMarkdown strong, .stMarkdown b {
-        color: #333 !important;
+        color: #2C3E50 !important;
     }
     
     /* Ensure all text in containers is visible */
     div[data-testid="stMarkdownContainer"] {
-        color: #333 !important;
+        color: #2C3E50 !important;
+        background: linear-gradient(135deg, #ECF0F1, #BDC3C7) !important;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
     }
     
     div[data-testid="stMarkdownContainer"] p {
-        color: #666 !important;
+        color: #34495E !important;
     }
     
     div[data-testid="stMarkdownContainer"] strong {
-        color: #333 !important;
+        color: #2C3E50 !important;
     }
     
     /* Fix text in custom styled divs */
     .stMarkdown div[style*="background"] {
-        color: inherit !important;
+        color: #2C3E50 !important;
     }
     
     .stMarkdown div[style*="background"] p {
-        color: inherit !important;
+        color: #34495E !important;
     }
     
     .stMarkdown div[style*="background"] strong {
-        color: inherit !important;
+        color: #2C3E50 !important;
     }
     
     /* Footer styling */
@@ -327,14 +337,22 @@ st.markdown("""
     
     /* Enhanced expander */
     .streamlit-expanderHeader {
-        background: linear-gradient(90deg, #f8f9fa, #e9ecef);
+        background: linear-gradient(90deg, #3498DB, #2980B9) !important;
+        color: #FFFFFF !important;
         border-radius: 8px;
         transition: all 0.3s ease;
     }
     
     .streamlit-expanderHeader:hover {
-        background: linear-gradient(90deg, #e9ecef, #dee2e6);
+        background: linear-gradient(90deg, #2980B9, #3498DB) !important;
         transform: translateX(5px);
+    }
+    
+    .streamlit-expanderContent {
+        background: linear-gradient(135deg, #ECF0F1, #D5DBDB) !important;
+        color: #2C3E50 !important;
+        padding: 1rem;
+        border-radius: 0 0 8px 8px;
     }
     
     /* Image container enhancement */
@@ -408,50 +426,68 @@ st.markdown("""
     
     /* Additional text visibility fixes */
     .stSelectbox label, .stTextInput label, .stFileUploader label {
-        color: #333 !important;
+        color: #2C3E50 !important;
+        font-weight: bold !important;
     }
     
     .stMetric label {
-        color: #666 !important;
+        color: #34495E !important;
     }
     
     .stMetric [data-testid="metric-container"] {
-        color: #333 !important;
+        background: linear-gradient(135deg, #E8F6F3, #D1F2EB) !important;
+        color: #2C3E50 !important;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #A3E4D7;
     }
     
     /* Fix for expander text */
     .streamlit-expanderHeader p {
-        color: #333 !important;
+        color: #FFFFFF !important;
+        font-weight: bold !important;
     }
     
     .streamlit-expanderContent {
-        color: #333 !important;
+        color: #2C3E50 !important;
     }
     
     /* Fix for info boxes */
     .stInfo {
-        color: #333 !important;
+        background: linear-gradient(135deg, #D6EAF8, #AED6F1) !important;
+        color: #1B4F72 !important;
+        border-left: 4px solid #3498DB !important;
     }
     
     .stSuccess {
-        color: #333 !important;
+        background: linear-gradient(135deg, #D5F4E6, #A9DFBF) !important;
+        color: #0E4B1C !important;
+        border-left: 4px solid #27AE60 !important;
     }
     
     .stWarning {
-        color: #333 !important;
+        background: linear-gradient(135deg, #FCF3CF, #F7DC6F) !important;
+        color: #7D6608 !important;
+        border-left: 4px solid #F39C12 !important;
     }
     
     .stError {
-        color: #333 !important;
+        background: linear-gradient(135deg, #FADBD8, #F1948A) !important;
+        color: #922B21 !important;
+        border-left: 4px solid #E74C3C !important;
     }
     
     /* Fix for tabs */
     .stTabs [data-baseweb="tab-list"] button {
-        color: #333 !important;
+        color: #FFFFFF !important;
+        font-weight: bold !important;
     }
     
     .stTabs [data-baseweb="tab-panel"] {
-        color: #333 !important;
+        background: linear-gradient(135deg, #FDFEFE, #F8F9F9) !important;
+        color: #2C3E50 !important;
+        padding: 1rem;
+        border-radius: 0 0 10px 10px;
     }
     
     /* Fix for all text elements */
@@ -461,13 +497,17 @@ st.markdown("""
     
     /* Ensure readability on all backgrounds */
     .stApp {
-        background-color: #ffffff;
-        color: #333;
+        background: linear-gradient(135deg, #EBF5FB, #D6EAF8) !important;
+        color: #2C3E50 !important;
     }
     
     .stApp .main .block-container {
-        background-color: #ffffff;
-        color: #333;
+        background: linear-gradient(135deg, #FDFEFE, #F8F9F9) !important;
+        color: #2C3E50 !important;
+        padding: 2rem;
+        border-radius: 15px;
+        margin: 1rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
