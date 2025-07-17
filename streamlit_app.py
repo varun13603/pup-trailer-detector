@@ -92,7 +92,7 @@ st.markdown("""
         border-radius: 15px;
         border: 2px solid #e0e0e0;
         margin: 1rem 0;
-        color: #333;
+        color: #333 !important;
         box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         backdrop-filter: blur(10px);
         transition: all 0.3s ease;
@@ -126,23 +126,39 @@ st.markdown("""
     .pup-positive {
         border-color: #4CAF50;
         background: linear-gradient(135deg, #f8fff8, #e8f5e8);
-        color: #2e7d32;
+        color: #2e7d32 !important;
     }
     
     .pup-positive h3 {
-        color: #2e7d32;
+        color: #2e7d32 !important;
         text-shadow: 1px 1px 2px rgba(46,125,50,0.3);
+    }
+    
+    .pup-positive p {
+        color: #2e7d32 !important;
+    }
+    
+    .pup-positive strong {
+        color: #1b5e20 !important;
     }
     
     .pup-negative {
         border-color: #f44336;
         background: linear-gradient(135deg, #fff8f8, #ffe8e8);
-        color: #c62828;
+        color: #c62828 !important;
     }
     
     .pup-negative h3 {
-        color: #c62828;
+        color: #c62828 !important;
         text-shadow: 1px 1px 2px rgba(198,40,40,0.3);
+    }
+    
+    .pup-negative p {
+        color: #c62828 !important;
+    }
+    
+    .pup-negative strong {
+        color: #b71c1c !important;
     }
     
     /* Enhanced metric cards */
@@ -236,6 +252,49 @@ st.markdown("""
     /* Enhanced sidebar */
     .css-1d391kg {
         background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+    }
+    
+    /* General text visibility fixes */
+    .stMarkdown, .stText {
+        color: #333 !important;
+    }
+    
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
+        color: #333 !important;
+    }
+    
+    .stMarkdown p, .stMarkdown li, .stMarkdown span {
+        color: #666 !important;
+    }
+    
+    .stMarkdown strong, .stMarkdown b {
+        color: #333 !important;
+    }
+    
+    /* Ensure all text in containers is visible */
+    div[data-testid="stMarkdownContainer"] {
+        color: #333 !important;
+    }
+    
+    div[data-testid="stMarkdownContainer"] p {
+        color: #666 !important;
+    }
+    
+    div[data-testid="stMarkdownContainer"] strong {
+        color: #333 !important;
+    }
+    
+    /* Fix text in custom styled divs */
+    .stMarkdown div[style*="background"] {
+        color: inherit !important;
+    }
+    
+    .stMarkdown div[style*="background"] p {
+        color: inherit !important;
+    }
+    
+    .stMarkdown div[style*="background"] strong {
+        color: inherit !important;
     }
     
     /* Footer styling */
@@ -345,6 +404,70 @@ st.markdown("""
         white-space: nowrap;
         font-size: 0.8rem;
         z-index: 1000;
+    }
+    
+    /* Additional text visibility fixes */
+    .stSelectbox label, .stTextInput label, .stFileUploader label {
+        color: #333 !important;
+    }
+    
+    .stMetric label {
+        color: #666 !important;
+    }
+    
+    .stMetric [data-testid="metric-container"] {
+        color: #333 !important;
+    }
+    
+    /* Fix for expander text */
+    .streamlit-expanderHeader p {
+        color: #333 !important;
+    }
+    
+    .streamlit-expanderContent {
+        color: #333 !important;
+    }
+    
+    /* Fix for info boxes */
+    .stInfo {
+        color: #333 !important;
+    }
+    
+    .stSuccess {
+        color: #333 !important;
+    }
+    
+    .stWarning {
+        color: #333 !important;
+    }
+    
+    .stError {
+        color: #333 !important;
+    }
+    
+    /* Fix for tabs */
+    .stTabs [data-baseweb="tab-list"] button {
+        color: #333 !important;
+    }
+    
+    .stTabs [data-baseweb="tab-panel"] {
+        color: #333 !important;
+    }
+    
+    /* Fix for all text elements */
+    * {
+        color: inherit;
+    }
+    
+    /* Ensure readability on all backgrounds */
+    .stApp {
+        background-color: #ffffff;
+        color: #333;
+    }
+    
+    .stApp .main .block-container {
+        background-color: #ffffff;
+        color: #333;
     }
 </style>
 """, unsafe_allow_html=True)
