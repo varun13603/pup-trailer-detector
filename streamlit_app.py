@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 MODEL_REPO_ID = "Jackaiuser/pup_detect"
 MODEL_FILENAME = "final_breakthrough_model.h5"
+HF_TOKEN = os.getenv('HF_TOKEN') or st.secrets.get('HF_TOKEN', None)
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
 
