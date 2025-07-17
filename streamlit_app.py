@@ -64,14 +64,23 @@ st.markdown("""
         border-radius: 10px;
         border: 2px solid #e0e0e0;
         margin: 1rem 0;
+        color: #333;
     }
     .pup-positive {
         border-color: #4CAF50;
         background-color: #f8fff8;
+        color: #2e7d32;
+    }
+    .pup-positive h3 {
+        color: #2e7d32;
     }
     .pup-negative {
         border-color: #f44336;
         background-color: #fff8f8;
+        color: #c62828;
+    }
+    .pup-negative h3 {
+        color: #c62828;
     }
     .metric-card {
         background: white;
