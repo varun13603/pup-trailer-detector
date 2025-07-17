@@ -48,46 +48,303 @@ st.set_page_config(
 # Custom CSS for better styling
 st.markdown("""
 <style>
+    /* Main header with animated gradient */
     .main-header {
         text-align: center;
         padding: 2rem 0;
-        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+        background: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4);
+        background-size: 300% 300%;
+        animation: gradient-shift 3s ease infinite;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        font-size: 3rem;
+        font-size: 3.5rem;
         font-weight: bold;
         margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
+    
+    @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* Animated loading spinner */
+    .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Enhanced prediction box with animations */
     .prediction-box {
-        padding: 1.5rem;
-        border-radius: 10px;
+        padding: 2rem;
+        border-radius: 15px;
         border: 2px solid #e0e0e0;
         margin: 1rem 0;
         color: #333;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.5s ease-out;
+        position: relative;
+        overflow: hidden;
     }
+    
+    .prediction-box::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: rotate(45deg);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+    
+    .prediction-box:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    }
+    
     .pup-positive {
         border-color: #4CAF50;
-        background-color: #f8fff8;
+        background: linear-gradient(135deg, #f8fff8, #e8f5e8);
         color: #2e7d32;
     }
+    
     .pup-positive h3 {
         color: #2e7d32;
+        text-shadow: 1px 1px 2px rgba(46,125,50,0.3);
     }
+    
     .pup-negative {
         border-color: #f44336;
-        background-color: #fff8f8;
+        background: linear-gradient(135deg, #fff8f8, #ffe8e8);
         color: #c62828;
     }
+    
     .pup-negative h3 {
         color: #c62828;
+        text-shadow: 1px 1px 2px rgba(198,40,40,0.3);
     }
+    
+    /* Enhanced metric cards */
     .metric-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         margin: 0.5rem 0;
+        transition: transform 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    }
+    
+    /* Animated progress bar */
+    .stProgress .st-bo {
+        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+        animation: progress-glow 2s ease infinite;
+    }
+    
+    @keyframes progress-glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(76,175,80,0.5); }
+        50% { box-shadow: 0 0 20px rgba(76,175,80,0.8); }
+    }
+    
+    /* Fade in animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Enhanced buttons */
+    .stButton button {
+        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .stButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        background: linear-gradient(45deg, #4ECDC4, #FF6B6B);
+    }
+    
+    /* Enhanced tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background: linear-gradient(90deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+        padding: 0.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(255,255,255,0.8);
+    }
+    
+    /* Enhanced file uploader */
+    .stFileUploader {
+        border: 2px dashed #4ECDC4;
+        border-radius: 15px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    }
+    
+    .stFileUploader:hover {
+        border-color: #FF6B6B;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        transform: translateY(-2px);
+    }
+    
+    /* Enhanced sidebar */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+    }
+    
+    /* Footer styling */
+    .footer {
+        background: linear-gradient(90deg, #2c3e50, #3498db);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin-top: 3rem;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+    
+    /* Success/Error message animations */
+    .stAlert {
+        animation: slideInRight 0.5s ease-out;
+        border-radius: 10px;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    /* Enhanced expander */
+    .streamlit-expanderHeader {
+        background: linear-gradient(90deg, #f8f9fa, #e9ecef);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .streamlit-expanderHeader:hover {
+        background: linear-gradient(90deg, #e9ecef, #dee2e6);
+        transform: translateX(5px);
+    }
+    
+    /* Image container enhancement */
+    .image-container {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .image-container:hover {
+        transform: scale(1.02);
+    }
+    
+    /* Stats cards animation */
+    .stats-card {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        text-align: center;
+        margin: 0.5rem 0;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(45deg, #4ECDC4, #FF6B6B);
+    }
+    
+    /* Tooltip styles */
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+    }
+    
+    .tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 0.5rem;
+        border-radius: 5px;
+        white-space: nowrap;
+        font-size: 0.8rem;
+        z-index: 1000;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -261,8 +518,20 @@ def save_prediction_to_session(result, image_name):
 
 def main():
     """Main application."""
-    # Header
+    # Header with enhanced styling
     st.markdown('<h1 class="main-header">🚛 Pup Trailer Detector</h1>', unsafe_allow_html=True)
+    
+    # Add subtitle with animation
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem; animation: fadeInUp 0.7s ease-out;">
+        <h3 style="color: #666; font-weight: 300; margin-bottom: 1rem;">
+            Advanced AI-Powered Trailer Classification System
+        </h3>
+        <p style="color: #888; font-size: 1.1rem;">
+            🤖 Powered by Deep Learning • 🎯 90%+ Accuracy • ⚡ Real-time Processing
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Load model first
     model = load_breakthrough_model()
@@ -286,13 +555,35 @@ def main():
         st.info("Please check the debug information above and try refreshing the page.")
         st.stop()
     
-    # Show minimal info about the model source (only after successful load)
+    # Success message with animation
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem; animation: slideInRight 0.5s ease-out;">
+        <div style="background: linear-gradient(90deg, #4CAF50, #45a049); color: white; padding: 1rem; border-radius: 10px; display: inline-block;">
+            ✅ Model loaded successfully! Ready for predictions
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Enhanced sidebar with better organization
+    st.sidebar.markdown("""
+    <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 10px; margin-bottom: 1rem;">
+        <h2 style="margin: 0; font-size: 1.5rem;">📊 Dashboard</h2>
+        <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Control Panel</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Model source info in sidebar
     st.sidebar.markdown(f"""
-    **Model Source:** [🤗 Hugging Face Hub]({MODEL_REPO_ID})
-    """)
+    <div style="background: linear-gradient(135deg, #FF6B6B, #4ECDC4); color: white; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+        <strong>🤗 Model Source:</strong><br>
+        <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank" style="color: white; text-decoration: underline;">
+            Hugging Face Hub
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Optional debug info (collapsed by default)
-    if st.sidebar.checkbox("Show Debug Info", value=False):
+    if st.sidebar.checkbox("🔧 Show Debug Info", value=False):
         with st.expander("🔧 Debug Information"):
             st.write(f"**Repository:** {MODEL_REPO_ID}")
             st.write(f"**Filename:** {MODEL_FILENAME}")
@@ -307,38 +598,94 @@ def main():
             except Exception as e:
                 st.write(f"- Secrets error: {e}")
     
-    # Sidebar
-    st.sidebar.title("📊 Dashboard")
+    # Enhanced model info in sidebar
+    with st.sidebar.expander("🔍 Model Information", expanded=True):
+        st.markdown("""
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <strong>🧠 Model Details:</strong><br>
+            • <strong>Name:</strong> Breakthrough Pup Trailer Detector<br>
+            • <strong>Architecture:</strong> ResNet50V2 + Custom Head<br>
+            • <strong>Input:</strong> 224×224×3 RGB Images<br>
+            • <strong>Training:</strong> 2-Phase Strategy<br>
+            • <strong>Classes:</strong> Pup / Non-Pup Trailer<br>
+            • <strong>Accuracy:</strong> 90%+
+        </div>
+        """, unsafe_allow_html=True)
     
-    # Model info in sidebar
-    with st.sidebar.expander("🔍 Model Information"):
-        st.write("**Model Name**: Breakthrough Pup Trailer Detection Model")
-        st.write("**Architecture**: ResNet50V2 + Custom Head")
-        st.write("**Input Shape**: 224x224x3")
-        st.write("**Training Strategy**: 2-Phase Training")
-        st.write("**Classes**: Non-Pup Trailer, Pup Trailer")
-        st.write(f"**Source**: [Hugging Face Hub]({MODEL_REPO_ID})")
-    
-    # Statistics in sidebar
+    # Enhanced statistics in sidebar
     if 'prediction_history' in st.session_state and st.session_state.prediction_history:
-        with st.sidebar.expander("📈 Statistics"):
+        with st.sidebar.expander("📈 Statistics", expanded=True):
             history = st.session_state.prediction_history
             pup_count = sum(1 for p in history if p['result']['is_pup'])
             total_predictions = len(history)
             
-            st.metric("Total Predictions", total_predictions)
-            st.metric("Pup Detections", pup_count)
-            st.metric("Non-Pup Detections", total_predictions - pup_count)
+            # Enhanced metrics with colors
+            st.markdown(f"""
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <h3 style="margin: 0; font-size: 1.5rem;">{total_predictions}</h3>
+                    <p style="margin: 0; font-size: 0.8rem;">Total Predictions</p>
+                </div>
+                <div style="background: linear-gradient(135deg, #27ae60, #229954); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <h3 style="margin: 0; font-size: 1.5rem;">{pup_count}</h3>
+                    <p style="margin: 0; font-size: 0.8rem;">Pup Detected</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; font-size: 1.5rem;">{total_predictions - pup_count}</h3>
+                <p style="margin: 0; font-size: 0.8rem;">Non-Pup Detected</p>
+            </div>
+            """, unsafe_allow_html=True)
             
             if total_predictions > 0:
                 avg_confidence = np.mean([p['result']['confidence'] for p in history])
-                st.metric("Average Confidence", f"{avg_confidence * 100:.1f}%")
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <h3 style="margin: 0; font-size: 1.5rem;">{avg_confidence * 100:.1f}%</h3>
+                    <p style="margin: 0; font-size: 0.8rem;">Avg Confidence</p>
+                </div>
+                """, unsafe_allow_html=True)
     
-    # Main content
-    tab1, tab2, tab3 = st.tabs(["📷 Upload Image", "🌐 URL Prediction", "📊 History"])
+    # Quick actions in sidebar
+    st.sidebar.markdown("### 🚀 Quick Actions")
+    if st.sidebar.button("📊 Export Statistics", help="Export prediction statistics as JSON"):
+        if 'prediction_history' in st.session_state:
+            stats = {
+                'total_predictions': len(st.session_state.prediction_history),
+                'pup_count': sum(1 for p in st.session_state.prediction_history if p['result']['is_pup']),
+                'export_time': datetime.now().isoformat()
+            }
+            st.sidebar.download_button(
+                label="💾 Download Stats",
+                data=json.dumps(stats, indent=2),
+                file_name=f"pup_detector_stats_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
+    
+    if st.sidebar.button("🧹 Clear All History", help="Clear all prediction history"):
+        st.session_state.prediction_history = []
+        st.sidebar.success("History cleared!")
+        st.experimental_rerun()
+    
+    # Enhanced main content with better tabs
+    st.markdown("""
+    <div style="margin: 2rem 0; text-align: center;">
+        <h2 style="color: #333; font-weight: 400;">Choose Your Prediction Method</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["📷 Upload Image", "🌐 URL Prediction", "📊 History", "ℹ️ About"])
     
     with tab1:
-        st.header("Upload Image for Prediction")
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h3 style="color: #4ECDC4;">📷 Upload Image for Analysis</h3>
+            <p style="color: #666;">Select an image from your device to detect pup trailers</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         uploaded_file = st.file_uploader(
             "Choose an image file",
@@ -347,19 +694,41 @@ def main():
         )
         
         if uploaded_file is not None:
-            # Display image
+            # Display image with enhanced styling
             image = Image.open(uploaded_file)
             
             col1, col2 = st.columns([1, 1])
             
             with col1:
-                st.subheader("📸 Uploaded Image")
-                st.image(image, caption=f"Uploaded: {uploaded_file.name}", use_container_width=True)
+                st.markdown("""
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <h4 style="color: #FF6B6B;">📸 Uploaded Image</h4>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                st.image(image, caption=f"📁 {uploaded_file.name}", use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Image info
+                st.markdown(f"""
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <strong>📋 Image Details:</strong><br>
+                    • <strong>Size:</strong> {image.size[0]} × {image.size[1]} pixels<br>
+                    • <strong>Format:</strong> {image.format}<br>
+                    • <strong>Mode:</strong> {image.mode}<br>
+                    • <strong>File Size:</strong> {len(uploaded_file.getvalue())/1024:.1f} KB
+                </div>
+                """, unsafe_allow_html=True)
             
             with col2:
-                st.subheader("🔍 Prediction Result")
+                st.markdown("""
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <h4 style="color: #4ECDC4;">🔍 Prediction Result</h4>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                with st.spinner("Analyzing image..."):
+                with st.spinner("🤖 Analyzing image..."):
                     result, error = predict_image(model, image)
                 
                 if error:
@@ -368,35 +737,59 @@ def main():
                     # Save to history
                     save_prediction_to_session(result, uploaded_file.name)
                     
-                    # Display result
+                    # Display enhanced result
                     css_class = "pup-positive" if result['is_pup'] else "pup-negative"
+                    emoji = "🚛" if result['is_pup'] else "🚚"
                     
                     st.markdown(f"""
                     <div class="prediction-box {css_class}">
-                        <h3>🎯 {result['class']}</h3>
+                        <h3>{emoji} {result['class']}</h3>
                         <p><strong>Confidence:</strong> {result['confidence_percentage']}</p>
                         <p><strong>Probability:</strong> {result['probability']:.4f}</p>
+                        <p><strong>Timestamp:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Progress bar for confidence
+                    # Enhanced progress bar
+                    st.markdown("**Confidence Level:**")
                     st.progress(result['confidence'])
                     
-                    # Detailed metrics
+                    # Enhanced metrics
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        st.metric("Confidence", result['confidence_percentage'])
+                        st.metric("🎯 Confidence", result['confidence_percentage'], 
+                                delta=f"{result['confidence']:.3f}" if result['confidence'] > 0.8 else None)
                     with col_b:
-                        st.metric("Classification", result['class'])
+                        st.metric("📊 Classification", result['class'])
+                    
+                    # Confidence interpretation
+                    if result['confidence'] > 0.9:
+                        st.success("🎯 Very High Confidence - Excellent prediction!")
+                    elif result['confidence'] > 0.7:
+                        st.info("✅ Good Confidence - Reliable prediction")
+                    else:
+                        st.warning("⚠️ Low Confidence - Consider trying another image")
     
     with tab2:
-        st.header("Predict from URL")
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h3 style="color: #4ECDC4;">🌐 Predict from URL</h3>
+            <p style="color: #666;">Enter an image URL to analyze remotely hosted images</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        url = st.text_input("Enter image URL:", placeholder="https://example.com/image.jpg")
+        url = st.text_input("🔗 Enter image URL:", placeholder="https://example.com/image.jpg")
         
-        if st.button("🔍 Predict from URL") and url:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            if url:
+                st.markdown(f"**Preview URL:** {url}")
+        with col2:
+            predict_button = st.button("🔍 Predict from URL", disabled=not url)
+        
+        if predict_button and url:
             try:
-                with st.spinner("Downloading and analyzing image..."):
+                with st.spinner("🌐 Downloading and analyzing image..."):
                     # Download image
                     response = requests.get(url, stream=True, timeout=30)
                     response.raise_for_status()
@@ -407,11 +800,22 @@ def main():
                     col1, col2 = st.columns([1, 1])
                     
                     with col1:
-                        st.subheader("📸 Downloaded Image")
-                        st.image(image, caption="Downloaded from URL", use_container_width=True)
+                        st.markdown("""
+                        <div style="text-align: center; margin-bottom: 1rem;">
+                            <h4 style="color: #FF6B6B;">📸 Downloaded Image</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                        st.image(image, caption="🌐 Downloaded from URL", use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     with col2:
-                        st.subheader("🔍 Prediction Result")
+                        st.markdown("""
+                        <div style="text-align: center; margin-bottom: 1rem;">
+                            <h4 style="color: #4ECDC4;">🔍 Prediction Result</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
                         result, error = predict_image(model, image)
                         
@@ -423,12 +827,14 @@ def main():
                             
                             # Display result
                             css_class = "pup-positive" if result['is_pup'] else "pup-negative"
+                            emoji = "🚛" if result['is_pup'] else "🚚"
                             
                             st.markdown(f"""
                             <div class="prediction-box {css_class}">
-                                <h3>🎯 {result['class']}</h3>
+                                <h3>{emoji} {result['class']}</h3>
                                 <p><strong>Confidence:</strong> {result['confidence_percentage']}</p>
                                 <p><strong>Probability:</strong> {result['probability']:.4f}</p>
+                                <p><strong>Source:</strong> URL</p>
                             </div>
                             """, unsafe_allow_html=True)
                             
@@ -436,42 +842,152 @@ def main():
                             
             except Exception as e:
                 st.error(f"❌ Error processing URL: {str(e)}")
+                st.info("💡 **Tips:**\n- Make sure the URL is accessible\n- URL should point directly to an image file\n- Try a different image URL")
     
     with tab3:
-        st.header("📊 Prediction History")
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h3 style="color: #4ECDC4;">📊 Prediction History</h3>
+            <p style="color: #666;">View and manage your prediction history</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         if 'prediction_history' in st.session_state and st.session_state.prediction_history:
             history = st.session_state.prediction_history
             
-            # Clear history button
-            if st.button("🗑️ Clear History"):
-                st.session_state.prediction_history = []
-                st.rerun()
+            # Enhanced stats summary
+            pup_count = sum(1 for p in history if p['result']['is_pup'])
+            total_predictions = len(history)
             
-            # Display history
-            for i, prediction in enumerate(reversed(history[-20:])):  # Show last 20
-                with st.expander(f"Prediction {len(history) - i}: {prediction['result']['class']} ({prediction['result']['confidence_percentage']})"):
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("📊 Total", total_predictions)
+            with col2:
+                st.metric("🚛 Pup", pup_count)
+            with col3:
+                st.metric("🚚 Non-Pup", total_predictions - pup_count)
+            with col4:
+                if total_predictions > 0:
+                    avg_conf = np.mean([p['result']['confidence'] for p in history])
+                    st.metric("🎯 Avg Confidence", f"{avg_conf:.1%}")
+            
+            # Clear history button
+            if st.button("🗑️ Clear History", help="Clear all prediction history"):
+                st.session_state.prediction_history = []
+                st.experimental_rerun()
+            
+            st.markdown("---")
+            
+            # Enhanced history display
+            for i, prediction in enumerate(reversed(history[-10:])):  # Show last 10
+                result = prediction['result']
+                emoji = "🚛" if result['is_pup'] else "🚚"
+                
+                with st.expander(f"{emoji} Prediction {len(history) - i}: {result['class']} ({result['confidence_percentage']})"):
                     col1, col2 = st.columns([1, 2])
                     
                     with col1:
-                        st.write(f"**File:** {prediction['filename']}")
-                        st.write(f"**Time:** {prediction['timestamp']}")
-                        st.write(f"**ID:** {prediction['id'][:8]}...")
+                        st.markdown(f"""
+                        **📁 File:** {prediction['filename']}  
+                        **🕒 Time:** {prediction['timestamp'][:19]}  
+                        **🆔 ID:** {prediction['id'][:8]}...
+                        """)
                     
                     with col2:
-                        result = prediction['result']
-                        st.write(f"**Class:** {result['class']}")
-                        st.write(f"**Confidence:** {result['confidence_percentage']}")
-                        st.write(f"**Probability:** {result['probability']:.4f}")
+                        st.markdown(f"""
+                        **🎯 Class:** {result['class']}  
+                        **📊 Confidence:** {result['confidence_percentage']}  
+                        **🔢 Probability:** {result['probability']:.4f}
+                        """)
                         st.progress(result['confidence'])
         else:
-            st.info("No predictions yet. Upload an image to get started!")
+            st.info("📝 No predictions yet. Upload an image to get started!")
+            
+            # Call to action
+            st.markdown("""
+            <div style="text-align: center; margin: 2rem 0;">
+                <p style="color: #666; font-size: 1.1rem;">
+                    Ready to make your first prediction? 🚀
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
     
-    # Footer
-    st.markdown("---")
-    st.markdown(f"""
-    <div style="text-align: center; color: #666; padding: 1rem;">
-        🚛 Pup Trailer Detector | Built with Streamlit & TensorFlow | Model from 🤗 <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank">Hugging Face</a>
+    with tab4:
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h3 style="color: #4ECDC4;">ℹ️ About This Application</h3>
+            <p style="color: #666;">Learn more about the Pup Trailer Detector</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Enhanced about section
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 2rem; border-radius: 15px; margin-bottom: 2rem;">
+            <h4 style="color: #333; margin-bottom: 1rem;">🎯 What is a Pup Trailer?</h4>
+            <p style="color: #666; line-height: 1.6;">
+                A pup trailer is a short semi-trailer that is typically pulled behind a truck or another trailer. 
+                It's commonly used in logistics to increase cargo capacity while maintaining maneuverability.
+            </p>
+            
+            <h4 style="color: #333; margin: 1.5rem 0 1rem 0;">🤖 How It Works</h4>
+            <p style="color: #666; line-height: 1.6;">
+                Our AI model uses advanced computer vision techniques based on ResNet50V2 architecture to analyze 
+                images and classify whether they contain pup trailers or not.
+            </p>
+            
+            <h4 style="color: #333; margin: 1.5rem 0 1rem 0;">🔧 Technical Details</h4>
+            <ul style="color: #666; line-height: 1.6;">
+                <li><strong>Model:</strong> ResNet50V2 with custom classification head</li>
+                <li><strong>Training:</strong> 2-phase training strategy for optimal performance</li>
+                <li><strong>Accuracy:</strong> 90%+ on validation data</li>
+                <li><strong>Input:</strong> 224×224 pixel RGB images</li>
+                <li><strong>Deployment:</strong> Hugging Face Hub integration</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Features section
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #FF6B6B, #ff5252); color: white; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                <h4 style="margin: 0 0 1rem 0;">🚀 Features</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>Real-time image analysis</li>
+                    <li>High accuracy predictions</li>
+                    <li>URL-based image processing</li>
+                    <li>Prediction history tracking</li>
+                    <li>Statistics and analytics</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #4ECDC4, #26c6da); color: white; padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                <h4 style="margin: 0 0 1rem 0;">💡 Tips for Best Results</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>Use clear, well-lit images</li>
+                    <li>Include the entire trailer in view</li>
+                    <li>Avoid heavily distorted images</li>
+                    <li>Higher resolution images work better</li>
+                    <li>Try different angles if unsure</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Enhanced footer
+    st.markdown("""
+    <div class="footer">
+        <h3 style="margin: 0 0 1rem 0;">🚛 Pup Trailer Detector</h3>
+        <p style="margin: 0 0 1rem 0; opacity: 0.9;">
+            Built with ❤️ using Streamlit & TensorFlow
+        </p>
+        <p style="margin: 0; opacity: 0.8;">
+            Model powered by 🤗 <a href="https://huggingface.co/{MODEL_REPO_ID}" target="_blank" style="color: #FFD700;">Hugging Face</a>
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
