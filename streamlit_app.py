@@ -854,7 +854,7 @@ def main():
     """Main application."""
     # Initialize dark mode in session state if not exists
     if 'dark_mode' not in st.session_state:
-        st.session_state.dark_mode = False
+        st.session_state.dark_mode = True
     
     # Header with enhanced styling
     st.markdown('<h1 class="main-header">🚛 Pup Trailer Detector</h1>', unsafe_allow_html=True)
