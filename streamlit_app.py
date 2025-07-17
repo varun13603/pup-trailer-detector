@@ -90,12 +90,11 @@ st.markdown("""
     .prediction-box {
         padding: 2rem;
         border-radius: 15px;
-        border: 2px solid #e0e0e0;
+        border: 1px solid #e0e0e0;
         margin: 1rem 0;
-        color: #FFFFFF !important;
-        background: linear-gradient(135deg, #667eea, #764ba2) !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        backdrop-filter: blur(10px);
+        color: #333 !important;
+        background: #ffffff !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         transition: all 0.3s ease;
         animation: fadeInUp 0.5s ease-out;
         position: relative;
@@ -120,55 +119,53 @@ st.markdown("""
     }
     
     .prediction-box:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
     }
     
     .pup-positive {
-        border-color: #4CAF50;
-        background: linear-gradient(135deg, #2E7D32, #4CAF50) !important;
-        color: #FFFFFF !important;
+        border-left: 4px solid #27AE60;
+        background: linear-gradient(135deg, #E8F8F5, #D5F4E6) !important;
+        color: #1E8449 !important;
     }
     
     .pup-positive h3 {
-        color: #FFFFFF !important;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        color: #1E8449 !important;
     }
     
     .pup-positive p {
-        color: #E8F5E8 !important;
+        color: #148F77 !important;
     }
     
     .pup-positive strong {
-        color: #FFFFFF !important;
+        color: #1E8449 !important;
     }
     
     .pup-negative {
-        border-color: #f44336;
-        background: linear-gradient(135deg, #D32F2F, #F44336) !important;
-        color: #FFFFFF !important;
+        border-left: 4px solid #E74C3C;
+        background: linear-gradient(135deg, #FDEDEC, #FADBD8) !important;
+        color: #C0392B !important;
     }
     
     .pup-negative h3 {
-        color: #FFFFFF !important;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        color: #C0392B !important;
     }
     
     .pup-negative p {
-        color: #FFE8E8 !important;
+        color: #A93226 !important;
     }
     
     .pup-negative strong {
-        color: #FFFFFF !important;
+        color: #C0392B !important;
     }
     
     /* Enhanced metric cards */
     .metric-card {
-        background: linear-gradient(135deg, #FF6B6B, #4ECDC4) !important;
-        color: #FFFFFF !important;
+        background: #ffffff !important;
+        color: #333 !important;
         padding: 1.5rem;
         border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         margin: 0.5rem 0;
         transition: transform 0.3s ease;
         border: 1px solid #e9ecef;
@@ -176,7 +173,7 @@ st.markdown("""
     
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     
     /* Animated progress bar */
@@ -204,60 +201,67 @@ st.markdown("""
     
     /* Enhanced buttons */
     .stButton button {
-        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+        background: #007bff;
         color: white;
         border: none;
-        border-radius: 25px;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 4px rgba(0,123,255,0.2);
     }
     
     .stButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        background: linear-gradient(45deg, #4ECDC4, #FF6B6B);
+        background: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.3);
     }
     
     /* Enhanced tabs */
     .stTabs [data-baseweb="tab-list"] {
-        background: linear-gradient(90deg, #667eea, #764ba2) !important;
-        color: #FFFFFF !important;
+        background: #f8f9fa !important;
         border-radius: 10px;
         padding: 0.5rem;
+        border: 1px solid #dee2e6;
     }
     
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         transition: all 0.3s ease;
-        color: #FFFFFF !important;
+        color: #495057 !important;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255,255,255,0.2) !important;
+        background: #e9ecef !important;
+        color: #212529 !important;
+    }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: #007bff !important;
+        color: #ffffff !important;
     }
     
     /* Enhanced file uploader */
     .stFileUploader {
-        border: 2px dashed #4ECDC4;
+        border: 2px dashed #007bff;
         border-radius: 15px;
         padding: 2rem;
         transition: all 0.3s ease;
-        background: linear-gradient(135deg, #667eea, #764ba2) !important;
-        color: #FFFFFF !important;
+        background: #f8f9ff !important;
+        color: #333 !important;
     }
     
     .stFileUploader:hover {
-        border-color: #FF6B6B;
-        background: linear-gradient(135deg, #FF6B6B, #4ECDC4) !important;
+        border-color: #0056b3;
+        background: #e6f3ff !important;
         transform: translateY(-2px);
     }
     
     /* Enhanced sidebar */
     .css-1d391kg {
-        background: linear-gradient(180deg, #667eea, #764ba2) !important;
-        color: #FFFFFF !important;
+        background: #f8f9fa !important;
+        color: #333 !important;
+        border-right: 1px solid #dee2e6;
     }
     
     /* General text visibility fixes */
@@ -266,45 +270,46 @@ st.markdown("""
     }
     
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
-        color: #2C3E50 !important;
+        color: #212529 !important;
     }
     
     .stMarkdown p, .stMarkdown li, .stMarkdown span {
-        color: #34495E !important;
+        color: #495057 !important;
     }
     
     .stMarkdown strong, .stMarkdown b {
-        color: #2C3E50 !important;
+        color: #212529 !important;
     }
     
     /* Ensure all text in containers is visible */
     div[data-testid="stMarkdownContainer"] {
-        color: #2C3E50 !important;
-        background: linear-gradient(135deg, #ECF0F1, #BDC3C7) !important;
+        color: #333 !important;
+        background: #ffffff !important;
         padding: 1rem;
         border-radius: 8px;
         margin: 0.5rem 0;
+        border: 1px solid #f0f0f0;
     }
     
     div[data-testid="stMarkdownContainer"] p {
-        color: #34495E !important;
+        color: #495057 !important;
     }
     
     div[data-testid="stMarkdownContainer"] strong {
-        color: #2C3E50 !important;
+        color: #212529 !important;
     }
     
     /* Fix text in custom styled divs */
     .stMarkdown div[style*="background"] {
-        color: #2C3E50 !important;
+        color: #333 !important;
     }
     
     .stMarkdown div[style*="background"] p {
-        color: #34495E !important;
+        color: #495057 !important;
     }
     
     .stMarkdown div[style*="background"] strong {
-        color: #2C3E50 !important;
+        color: #212529 !important;
     }
     
     /* Footer styling */
@@ -337,22 +342,25 @@ st.markdown("""
     
     /* Enhanced expander */
     .streamlit-expanderHeader {
-        background: linear-gradient(90deg, #3498DB, #2980B9) !important;
-        color: #FFFFFF !important;
+        background: #f8f9fa !important;
+        color: #333 !important;
+        border: 1px solid #dee2e6;
         border-radius: 8px;
         transition: all 0.3s ease;
     }
     
     .streamlit-expanderHeader:hover {
-        background: linear-gradient(90deg, #2980B9, #3498DB) !important;
-        transform: translateX(5px);
+        background: #e9ecef !important;
+        transform: translateX(3px);
     }
     
     .streamlit-expanderContent {
-        background: linear-gradient(135deg, #ECF0F1, #D5DBDB) !important;
-        color: #2C3E50 !important;
+        background: #ffffff !important;
+        color: #333 !important;
         padding: 1rem;
         border-radius: 0 0 8px 8px;
+        border: 1px solid #dee2e6;
+        border-top: none;
     }
     
     /* Image container enhancement */
@@ -426,68 +434,71 @@ st.markdown("""
     
     /* Additional text visibility fixes */
     .stSelectbox label, .stTextInput label, .stFileUploader label {
-        color: #2C3E50 !important;
-        font-weight: bold !important;
+        color: #333 !important;
+        font-weight: 500 !important;
     }
     
     .stMetric label {
-        color: #34495E !important;
+        color: #495057 !important;
     }
     
     .stMetric [data-testid="metric-container"] {
-        background: linear-gradient(135deg, #E8F6F3, #D1F2EB) !important;
-        color: #2C3E50 !important;
+        background: #ffffff !important;
+        color: #333 !important;
         padding: 1rem;
         border-radius: 8px;
-        border: 1px solid #A3E4D7;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
     /* Fix for expander text */
     .streamlit-expanderHeader p {
-        color: #FFFFFF !important;
-        font-weight: bold !important;
+        color: #333 !important;
+        font-weight: 500 !important;
     }
     
     .streamlit-expanderContent {
-        color: #2C3E50 !important;
+        color: #333 !important;
     }
     
     /* Fix for info boxes */
     .stInfo {
-        background: linear-gradient(135deg, #D6EAF8, #AED6F1) !important;
-        color: #1B4F72 !important;
-        border-left: 4px solid #3498DB !important;
+        background: #e7f3ff !important;
+        color: #0056b3 !important;
+        border-left: 4px solid #007bff !important;
     }
     
     .stSuccess {
-        background: linear-gradient(135deg, #D5F4E6, #A9DFBF) !important;
-        color: #0E4B1C !important;
-        border-left: 4px solid #27AE60 !important;
+        background: #e8f5e9 !important;
+        color: #2e7d32 !important;
+        border-left: 4px solid #4caf50 !important;
     }
     
     .stWarning {
-        background: linear-gradient(135deg, #FCF3CF, #F7DC6F) !important;
-        color: #7D6608 !important;
-        border-left: 4px solid #F39C12 !important;
+        background: #fff3cd !important;
+        color: #856404 !important;
+        border-left: 4px solid #ffc107 !important;
     }
     
     .stError {
-        background: linear-gradient(135deg, #FADBD8, #F1948A) !important;
-        color: #922B21 !important;
-        border-left: 4px solid #E74C3C !important;
+        background: #f8d7da !important;
+        color: #721c24 !important;
+        border-left: 4px solid #dc3545 !important;
     }
     
     /* Fix for tabs */
     .stTabs [data-baseweb="tab-list"] button {
-        color: #FFFFFF !important;
-        font-weight: bold !important;
+        color: #495057 !important;
+        font-weight: 500 !important;
     }
     
     .stTabs [data-baseweb="tab-panel"] {
-        background: linear-gradient(135deg, #FDFEFE, #F8F9F9) !important;
-        color: #2C3E50 !important;
-        padding: 1rem;
+        background: #ffffff !important;
+        color: #333 !important;
+        padding: 1.5rem;
         border-radius: 0 0 10px 10px;
+        border: 1px solid #dee2e6;
+        border-top: none;
     }
     
     /* Fix for all text elements */
@@ -497,17 +508,18 @@ st.markdown("""
     
     /* Ensure readability on all backgrounds */
     .stApp {
-        background: linear-gradient(135deg, #EBF5FB, #D6EAF8) !important;
-        color: #2C3E50 !important;
+        background: #f8f9fa !important;
+        color: #333 !important;
     }
     
     .stApp .main .block-container {
-        background: linear-gradient(135deg, #FDFEFE, #F8F9F9) !important;
-        color: #2C3E50 !important;
+        background: #ffffff !important;
+        color: #333 !important;
         padding: 2rem;
         border-radius: 15px;
         margin: 1rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e9ecef;
     }
 </style>
 """, unsafe_allow_html=True)
