@@ -39,7 +39,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 
 # Page configuration
 st.set_page_config(
-    page_title="🚛 Pup Trailer Detector",
+    page_title="Pup Trailer Detector",
     page_icon="🚛",
     layout="wide",
     initial_sidebar_state="expanded"
