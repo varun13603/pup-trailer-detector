@@ -110,101 +110,132 @@ def handle_api_request():
         # Add JavaScript to check localStorage with enhanced chunked data support
         html_content = """
         <script>
-        let imageProcessed = false;
+        console.log('🔄 Tampermonkey integration script started');
+        let processingComplete = false;
         
-        function checkForImage() {
-            if (imageProcessed) return; // Prevent multiple processing
+        function processImageData() {
+            if (processingComplete) {
+                console.log('⏭️ Processing already completed');
+                return;
+            }
+            
+            console.log('🔍 Checking for image data...');
             
             // Check for chunked data first
-            const chunkedData = localStorage.getItem('pupPredictionImageChunks');
-            if (chunkedData) {
-                try {
+            try {
+                const chunkedData = localStorage.getItem('pupPredictionImageChunks');
+                if (chunkedData) {
+                    console.log('📦 Found chunked data');
                     const chunkInfo = JSON.parse(chunkedData);
-                    console.log('Found chunked image data from Tampermonkey:', chunkInfo.totalChunks, 'chunks');
+                    console.log('📊 Chunk info:', chunkInfo.totalChunks, 'chunks');
                     
                     // Reconstruct the full image from chunks
                     const fullImageData = chunkInfo.chunks.join('');
-                    console.log('Reconstructed image size:', Math.round(fullImageData.length / 1024), 'KB');
+                    console.log('🔗 Reconstructed image size:', Math.round(fullImageData.length / 1024), 'KB');
                     
-                    imageProcessed = true;
-                    
-                    // Send data to Streamlit via query params - force page reload
-                    const currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.set('api', 'predict');
-                    currentUrl.searchParams.set('image_data', fullImageData);
-                    currentUrl.searchParams.set('image_loaded', 'true');
-                    
-                    // Clear the data and redirect
+                    processingComplete = true;
                     localStorage.removeItem('pupPredictionImageChunks');
-                    window.location.href = currentUrl.toString();
                     
-                } catch (error) {
-                    console.error('Error processing chunked data:', error);
-                    document.getElementById('status').innerHTML = 
-                        '<div style="text-align: center; padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px;">' +
-                        '<h3>❌ Error Processing Chunked Data</h3>' +
-                        '<p>Error: ' + error.message + '</p>' +
-                        '</div>';
+                    // Redirect to API with the reconstructed data
+                    redirectToAPI(fullImageData);
+                    return;
                 }
+            } catch (error) {
+                console.error('❌ Error processing chunked data:', error);
+                showStatus('❌ Error Processing Chunked Data: ' + error.message, '#ffebee');
                 return;
             }
             
             // Check for regular image data
-            const imageData = localStorage.getItem('pupPredictionImage');
-            if (imageData) {
-                try {
+            try {
+                const imageData = localStorage.getItem('pupPredictionImage');
+                if (imageData) {
+                    console.log('🖼️ Found regular image data');
                     const data = JSON.parse(imageData);
-                    console.log('Found image data from Tampermonkey');
                     
                     const sizeKB = Math.round(data.data.length / 1024);
-                    console.log('Image size:', sizeKB, 'KB, compressed:', data.compressed);
+                    console.log('📏 Image size:', sizeKB, 'KB, compressed:', data.compressed);
                     
-                    imageProcessed = true;
-                    
-                    // Clear the localStorage first
+                    processingComplete = true;
                     localStorage.removeItem('pupPredictionImage');
                     
-                    // Force redirect to API endpoint
-                    const currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.set('api', 'predict');
-                    currentUrl.searchParams.set('image_data', data.data);
-                    currentUrl.searchParams.set('image_loaded', 'true');
-                    
-                    console.log('Redirecting to API endpoint...');
-                    window.location.href = currentUrl.toString();
-                    
-                } catch (error) {
-                    console.error('Error parsing image data:', error);
-                    document.getElementById('status').innerHTML = 
-                        '<div style="text-align: center; padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px;">' +
-                        '<h3>❌ Error Processing Image Data</h3>' +
-                        '<p>Error: ' + error.message + '</p>' +
-                        '</div>';
+                    // Redirect to API with the image data
+                    redirectToAPI(data.data);
+                    return;
                 }
-            } else {
-                document.getElementById('status').innerHTML = 
-                    '<div style="text-align: center; padding: 20px; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px;">' +
-                    '<h3>📷 Waiting for image from Tampermonkey...</h3>' +
-                    '<p>Take a screenshot using the Tampermonkey script and it will appear here automatically.</p>' +
-                    '<p style="font-size: 0.9em; color: #666;">✅ Integration is working correctly. Supports images of any size.</p>' +
-                    '<p style="font-size: 0.8em; color: #999;">Production Streamlit app: https://pup-test.streamlit.app/</p>' +
+            } catch (error) {
+                console.error('❌ Error processing image data:', error);
+                showStatus('❌ Error Processing Image Data: ' + error.message, '#ffebee');
+                return;
+            }
+            
+            // No data found
+            console.log('📭 No image data found in localStorage');
+            showStatus(
+                '📷 Waiting for image from Tampermonkey...<br>' +
+                'Take a screenshot using the Tampermonkey script and it will appear here automatically.<br>' +
+                '<small>✅ Integration is working correctly. Supports images of any size.</small><br>' +
+                '<small>🌐 Production URL: https://pup-test.streamlit.app/</small>',
+                '#e3f2fd'
+            );
+        }
+        
+        function redirectToAPI(imageData) {
+            console.log('🚀 Redirecting to API endpoint...');
+            showStatus('🚀 Redirecting to prediction API...', '#fff3cd');
+            
+            // Build the redirect URL
+            const baseUrl = window.location.origin + window.location.pathname;
+            const apiUrl = baseUrl + '?api=predict&image_data=' + encodeURIComponent(imageData) + '&image_loaded=true';
+            
+            console.log('🔗 API URL length:', apiUrl.length);
+            
+            // Try to redirect
+            try {
+                window.location.href = apiUrl;
+            } catch (error) {
+                console.error('❌ Redirect failed:', error);
+                showStatus('❌ Redirect failed: ' + error.message, '#ffebee');
+            }
+        }
+        
+        function showStatus(message, backgroundColor) {
+            const statusDiv = document.getElementById('status');
+            if (statusDiv) {
+                statusDiv.innerHTML = 
+                    '<div style="text-align: center; padding: 20px; background: ' + backgroundColor + '; border: 1px solid #ddd; border-radius: 8px;">' +
+                    '<h3>' + message + '</h3>' +
                     '</div>';
             }
         }
         
-        // Check immediately and then every 1 second
-        checkForImage();
-        const intervalId = setInterval(checkForImage, 1000);
+        // Start processing immediately
+        console.log('🎬 Starting image processing...');
+        processImageData();
         
-        // Stop checking after 30 seconds to avoid infinite loops
-        setTimeout(() => {
-            clearInterval(intervalId);
-        }, 30000);
+        // Also check every 2 seconds for 30 seconds as fallback
+        let checkCount = 0;
+        const maxChecks = 15;
+        
+        const intervalId = setInterval(() => {
+            checkCount++;
+            console.log('🔄 Periodic check', checkCount, '/', maxChecks);
+            
+            if (processingComplete || checkCount >= maxChecks) {
+                clearInterval(intervalId);
+                console.log('⏹️ Stopping periodic checks');
+                return;
+            }
+            
+            processImageData();
+        }, 2000);
+        
+        console.log('✅ Tampermonkey integration script initialized');
         </script>
         
         <div id="status">
             <div style="text-align: center; padding: 20px;">
-                <h3>🔄 Checking for image data...</h3>
+                <h3>🔄 Initializing...</h3>
             </div>
         </div>
         """
