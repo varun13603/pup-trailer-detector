@@ -221,6 +221,24 @@ def handle_api_request():
         console.log('🔄 Tampermonkey integration script started');
         let processingComplete = false;
         
+        // Listen for postMessage data from Tampermonkey (for blob method fallback)
+        window.addEventListener('message', function(event) {
+            console.log('📨 Received postMessage:', event.origin, event.data);
+            
+            if (event.data && event.data.type === 'imageData') {
+                console.log('📎 Received image data via postMessage');
+                
+                if (!processingComplete) {
+                    processingComplete = true;
+                    const imageData = event.data.data;
+                    const filename = event.data.filename || 'postmessage_image.png';
+                    
+                    console.log('✅ Processing postMessage image data:', Math.round(imageData.length / 1024), 'KB');
+                    redirectToAPI(imageData, filename);
+                }
+            }
+        });
+        
         function processImageData() {
             if (processingComplete) {
                 console.log('⏭️ Processing already completed');
@@ -255,9 +273,7 @@ def handle_api_request():
             } catch (error) {
                 console.error('❌ Error processing blob data:', error);
                 showStatus('❌ Error Processing Blob Data: ' + error.message, '#ffebee');
-            }
-            
-            // Check for chunked data
+            }            // Check for chunked data
             try {
                 const chunkedData = localStorage.getItem('pupPredictionImageChunks');
                 if (chunkedData) {
