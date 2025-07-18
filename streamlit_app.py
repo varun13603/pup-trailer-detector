@@ -56,18 +56,19 @@ def handle_api_request():
             <script>
             if (window.tempImageData) {
                 console.log('🔍 Found temp image data:', window.tempImageData.length);
-                // Create a form and submit the data via POST
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '?api=predict&method=post';
-                form.target = '_self';
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'image_data';
-                input.value = window.tempImageData;
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
+                // Get filename and origin from URL params or use temp variables
+                const urlParams = new URLSearchParams(window.location.search);
+                const filename = urlParams.get('filename') || window.tempFilename || 'large_image.png';
+                const origin = urlParams.get('origin') || window.tempOrigin || 'https://trans-logistics.amazon.com';
+                
+                // Redirect to API with the large image data
+                const redirectUrl = window.location.origin + window.location.pathname + 
+                    '?api=predict&image_data=' + encodeURIComponent(window.tempImageData) + 
+                    '&filename=' + encodeURIComponent(filename) + 
+                    '&origin=' + encodeURIComponent(origin) + 
+                    '&image_loaded=true';
+                
+                window.location.href = redirectUrl;
             } else {
                 document.body.innerHTML = '<h2>❌ No large image data found</h2>';
             }
@@ -132,22 +133,51 @@ def handle_api_request():
                             </div>
                             """, unsafe_allow_html=True)
                         
-                        # Add JavaScript to show success notification
+                        # Add JavaScript to send result back to parent window
+                        result_js = {
+                            'is_pup': result['is_pup'],
+                            'confidence': result['confidence'],
+                            'confidence_percentage': result['confidence_percentage'],
+                            'class': result['class'],
+                            'filename': query_params.get('filename', 'tampermonkey_screenshot.png')
+                        }
+                        
                         st.components.v1.html(f"""
                         <script>
                         console.log('✅ Prediction completed successfully!');
-                        console.log('Result:', {json.dumps(api_result)});
+                        console.log('Result:', {json.dumps(result_js)});
                         
-                        // Show result in a notification style
-                        if (window.parent) {{
-                            try {{
-                                window.parent.postMessage({{
-                                    type: 'prediction_result',
-                                    result: {json.dumps(api_result)}
-                                }}, '*');
-                            }} catch (e) {{
-                                console.log('Could not send result to parent:', e);
+                        // Send result back to the parent window (Tampermonkey script)
+                        try {{
+                            // Try to get the origin from query params
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const origin = urlParams.get('origin') || 'https://trans-logistics.amazon.com';
+                            
+                            // Send message to parent opener window
+                            if (window.opener) {{
+                                console.log('Sending result to opener window...');
+                                window.opener.postMessage({{
+                                    type: 'predictionResult',
+                                    result: {json.dumps(result_js)}
+                                }}, origin);
                             }}
+                            
+                            // Also try sending to parent frame
+                            if (window.parent && window.parent !== window) {{
+                                console.log('Sending result to parent frame...');
+                                window.parent.postMessage({{
+                                    type: 'predictionResult', 
+                                    result: {json.dumps(result_js)}
+                                }}, origin);
+                            }}
+                            
+                            // Close this window after sending the result
+                            setTimeout(() => {{
+                                window.close();
+                            }}, 2000);
+                            
+                        }} catch (e) {{
+                            console.error('Could not send result to parent:', e);
                         }}
                         </script>
                         """, height=100)
@@ -243,7 +273,7 @@ def handle_api_request():
                     localStorage.removeItem('pupPredictionImageChunks');
                     
                     // Redirect to API with the reconstructed data
-                    redirectToAPI(fullImageData);
+                    redirectToAPI(fullImageData, 'chunked_image.png');
                     return;
                 }
             } catch (error) {
@@ -266,7 +296,7 @@ def handle_api_request():
                     localStorage.removeItem('pupPredictionImage');
                     
                     // Redirect to API with the image data
-                    redirectToAPI(data.data);
+                    redirectToAPI(data.data, data.filename);
                     return;
                 }
             } catch (error) {
@@ -299,7 +329,7 @@ def handle_api_request():
                     reader.onload = function(e) {
                         const base64Data = e.target.result.split(',')[1];
                         console.log('🔄 Converted blob to base64, redirecting...');
-                        redirectToAPI(base64Data);
+                        redirectToAPI(base64Data, 'blob_image.png');
                     };
                     reader.readAsDataURL(blob);
                 })
@@ -309,17 +339,20 @@ def handle_api_request():
                 });
         }
         
-        function redirectToAPI(imageData) {
+        function redirectToAPI(imageData, filename = 'screenshot.png') {
             console.log('🚀 Redirecting to API endpoint...');
             showStatus('🚀 Redirecting to prediction API...', '#fff3cd');
             
             // Build the redirect URL
             const baseUrl = window.location.origin + window.location.pathname;
             
+            // Include filename in the URL
+            const origin = new URLSearchParams(window.location.search).get('origin') || 'https://trans-logistics.amazon.com';
+            
             // Check if image data is too large for URL
             const maxUrlLength = 8192; // Conservative limit
             const encodedData = encodeURIComponent(imageData);
-            const testUrl = baseUrl + '?api=predict&image_data=' + encodedData;
+            const testUrl = baseUrl + '?api=predict&image_data=' + encodedData + '&filename=' + encodeURIComponent(filename) + '&origin=' + encodeURIComponent(origin);
             
             console.log('🔗 API URL length:', testUrl.length);
             
@@ -329,9 +362,11 @@ def handle_api_request():
                 
                 // Store in a temporary variable and use a simpler redirect
                 window.tempImageData = imageData;
+                window.tempFilename = filename;
+                window.tempOrigin = origin;
                 
                 // Redirect to a processing page that will handle the large image
-                window.location.href = baseUrl + '?api=predict&large_image=true';
+                window.location.href = baseUrl + '?api=predict&large_image=true&filename=' + encodeURIComponent(filename) + '&origin=' + encodeURIComponent(origin);
             } else {
                 // Normal redirect for smaller images
                 const apiUrl = testUrl + '&image_loaded=true';
@@ -1223,34 +1258,7 @@ def main():
     if handle_api_request():
         return
 
-    # --- Direct POST upload endpoint for Tampermonkey integration ---
-    if st.request.method == "POST":
-        st.markdown("# 🤖 API Prediction Endpoint (POST Upload)")
-        uploaded_file = st.request.files.get("file")
-        if uploaded_file:
-            image_bytes = uploaded_file.read()
-            image = Image.open(io.BytesIO(image_bytes))
-            st.image(image, caption="Uploaded Image", use_column_width=True)
-            model = load_breakthrough_model()
-            if model:
-                with st.spinner("🤖 AI is analyzing the image..."):
-                    result, error = predict_image(model, image)
-                if error:
-                    st.error(f"❌ Prediction Error: {error}")
-                else:
-                    api_result = {
-                        'prediction': 'pup' if result['is_pup'] else 'not_pup',
-                        'confidence': result['confidence'] * 100,
-                        'probability': result['probability'],
-                        'class': result['class'],
-                        'filename': uploaded_file.name
-                    }
-                    st.json(api_result)
-            else:
-                st.error("❌ Model failed to load")
-        else:
-            st.error("❌ No file uploaded in POST request")
-        return
+    # Removed invalid POST upload endpoint (st.request) -- Streamlit does not support raw POST endpoints
     
     # Initialize dark mode in session state if not exists
     if 'dark_mode' not in st.session_state:
