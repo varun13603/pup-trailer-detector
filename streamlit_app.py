@@ -234,10 +234,25 @@ def handle_api_request():
                     const filename = event.data.filename || 'postmessage_image.png';
                     
                     console.log('✅ Processing postMessage image data:', Math.round(imageData.length / 1024), 'KB');
+                    showStatus('✅ Image received via postMessage, processing...', '#d4edda');
                     redirectToAPI(imageData, filename);
                 }
             }
         });
+        
+        // Send a ready message to indicate Streamlit is loaded
+        setTimeout(() => {
+            try {
+                if (window.opener) {
+                    window.opener.postMessage({
+                        type: 'streamlitReady'
+                    }, '*');
+                    console.log('📡 Sent ready signal to opener');
+                }
+            } catch (e) {
+                console.log('Could not send ready signal:', e);
+            }
+        }, 1000);
         
         function processImageData() {
             if (processingComplete) {
@@ -251,7 +266,8 @@ def handle_api_request():
             const urlParams = new URLSearchParams(window.location.search);
             const blobUrl = urlParams.get('blob');
             if (blobUrl) {
-                console.log('📎 Found blob URL in query params');
+                console.log('📎 Found blob URL in query params:', blobUrl);
+                processingComplete = true;
                 processBlobUrl(decodeURIComponent(blobUrl));
                 return;
             }
@@ -323,18 +339,35 @@ def handle_api_request():
             
             // No data found
             console.log('📭 No image data found in localStorage');
-            showStatus(
-                '📷 Waiting for image from Tampermonkey...<br>' +
-                'Take a screenshot using the Tampermonkey script and it will appear here automatically.<br>' +
-                '<small>✅ Integration is working correctly. Supports images of any size.</small><br>' +
-                '<small>🌐 Production URL: https://pup-test.streamlit.app/</small>',
-                '#e3f2fd'
-            );
+            
+            // Check if we're waiting for postMessage
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('method') === 'postmessage') {
+                showStatus(
+                    '� Waiting for image data via postMessage...<br>' +
+                    'Streamlit is ready to receive image from Tampermonkey.<br>' +
+                    '<small>✅ PostMessage integration active</small><br>' +
+                    '<small>🌐 Production URL: https://pup-test.streamlit.app/</small>',
+                    '#e8f4fd'
+                );
+            } else {
+                showStatus(
+                    '�📷 Waiting for image from Tampermonkey...<br>' +
+                    'Take a screenshot using the Tampermonkey script and it will appear here automatically.<br>' +
+                    '<small>✅ Integration is working correctly. Supports images of any size.</small><br>' +
+                    '<small>🌐 Production URL: https://pup-test.streamlit.app/</small>',
+                    '#e3f2fd'
+                );
+            }
         }
         
         function processBlobUrl(blobUrl) {
             console.log('📎 Processing blob URL:', blobUrl.substring(0, 50) + '...');
             showStatus('📎 Processing blob image data...', '#fff3cd');
+            
+            // Get filename from query params
+            const urlParams = new URLSearchParams(window.location.search);
+            const filename = urlParams.get('filename') || 'blob_image.png';
             
             fetch(blobUrl)
                 .then(response => response.blob())
@@ -345,7 +378,7 @@ def handle_api_request():
                     reader.onload = function(e) {
                         const base64Data = e.target.result.split(',')[1];
                         console.log('🔄 Converted blob to base64, redirecting...');
-                        redirectToAPI(base64Data, 'blob_image.png');
+                        redirectToAPI(base64Data, filename);
                     };
                     reader.readAsDataURL(blob);
                 })
