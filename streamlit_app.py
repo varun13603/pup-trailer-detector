@@ -35,69 +35,164 @@ def handle_api_request():
         # This is an API request
         st.markdown("# 🤖 API Prediction Endpoint")
         
-        # Check for base64 image data in query params
+        # Check for base64 image data in query params (from URL or form)
+        image_data = None
+        
+        # Method 1: Check query params (from URL)
         if 'image_data' in query_params:
+            image_data = query_params['image_data']
+            st.info("📥 Received image data via URL parameters")
+        
+        # Method 2: Check if there's an image parameter with a different name
+        elif 'image' in query_params:
+            image_data = query_params['image']
+            st.info("📥 Received image data via image parameter")
+        
+        # Method 3: Check for large image flag and look for data in window object
+        elif 'large_image' in query_params:
+            st.info("📥 Processing large image data...")
+            # Add JavaScript to check for temp image data
+            st.components.v1.html("""
+            <script>
+            if (window.tempImageData) {
+                console.log('🔍 Found temp image data:', window.tempImageData.length);
+                
+                // Create a form and submit the data
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '?api=predict&method=post';
+                
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'image_data';
+                input.value = window.tempImageData;
+                
+                form.appendChild(input);
+                document.body.appendChild(form);
+                
+                // For now, just try to put it in localStorage and reload
+                try {
+                    localStorage.setItem('largeTempImage', window.tempImageData);
+                    window.location.reload();
+                } catch (e) {
+                    console.error('Failed to store large image:', e);
+                    document.body.innerHTML = '<h2>❌ Image too large to process</h2>';
+                }
+            } else {
+                // Check localStorage for the large image
+                const largeImage = localStorage.getItem('largeTempImage');
+                if (largeImage) {
+                    localStorage.removeItem('largeTempImage');
+                    
+                    // Redirect with the image data
+                    const url = window.location.origin + window.location.pathname + 
+                                '?api=predict&image_data=' + encodeURIComponent(largeImage);
+                    window.location.href = url;
+                } else {
+                    document.body.innerHTML = '<h2>❌ No large image data found</h2>';
+                }
+            }
+            </script>
+            """, height=100)
+            return True
+        
+        if image_data:
             try:
-                image_data = query_params['image_data']
-                
-                # Decode base64 image
-                image_bytes = base64.b64decode(image_data)
-                image = Image.open(io.BytesIO(image_bytes))
-                
-                # Load model and make prediction
-                model = load_breakthrough_model()
-                if model:
-                    result, error = predict_image(model, image)
+                # Handle URL encoding
+                if isinstance(image_data, str):
+                    # Remove data URI prefix if present
+                    if image_data.startswith('data:'):
+                        image_data = image_data.split(',', 1)[1]
                     
-                    if error:
-                        st.error(f"❌ Error: {error}")
-                        return True
+                    # Decode base64 image
+                    image_bytes = base64.b64decode(image_data)
+                    image = Image.open(io.BytesIO(image_bytes))
                     
-                    # Convert result format for compatibility
-                    api_result = {
-                        'prediction': 'pup' if result['is_pup'] else 'not_pup',
-                        'confidence': result['confidence'] * 100,  # Convert to percentage
-                        'probability': result['probability'],
-                        'class': result['class'],
-                        'filename': 'tampermonkey_screenshot.png'
-                    }
+                    st.success(f"✅ Image loaded successfully! Size: {image.size}")
                     
-                    # Display result
-                    st.success(f"✅ Prediction completed!")
-                    
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        st.image(image, caption="Uploaded Image", use_container_width=True)
-                    
-                    with col2:
-                        prediction_class = "🚛 PUP TRAILER" if api_result['prediction'] == 'pup' else "🚚 NOT PUP"
-                        confidence = api_result['confidence']
+                    # Load model and make prediction
+                    model = load_breakthrough_model()
+                    if model:
+                        with st.spinner("🤖 AI is analyzing the image..."):
+                            result, error = predict_image(model, image)
                         
-                        st.markdown(f"""
-                        <div style="background: {'#e6fffa' if api_result['prediction'] == 'pup' else '#fff5f5'}; 
-                                    border: 2px solid {'#38a169' if api_result['prediction'] == 'pup' else '#e53e3e'}; 
-                                    border-radius: 12px; padding: 1.5rem; text-align: center;">
-                            <h3 style="color: {'#2f855a' if api_result['prediction'] == 'pup' else '#c53030'}; margin-bottom: 1rem;">
-                                {prediction_class}
-                            </h3>
-                            <p style="font-size: 1.2rem; font-weight: bold; color: #4a5568;">
-                                Confidence: {confidence:.1f}%
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    # Return JSON response for programmatic access
-                    st.json(api_result)
-                    return True
-                else:
-                    st.error("❌ Model failed to load")
-                    return True
-                    
+                        if error:
+                            st.error(f"❌ Prediction Error: {error}")
+                            return True
+                        
+                        # Convert result format for compatibility
+                        api_result = {
+                            'prediction': 'pup' if result['is_pup'] else 'not_pup',
+                            'confidence': result['confidence'] * 100,  # Convert to percentage
+                            'probability': result['probability'],
+                            'class': result['class'],
+                            'filename': query_params.get('filename', 'tampermonkey_screenshot.png')
+                        }
+                        
+                        # Display result
+                        st.success(f"🎯 Prediction completed!")
+                        
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            st.image(image, caption="Uploaded Image", use_container_width=True)
+                        
+                        with col2:
+                            prediction_class = "🚛 PUP TRAILER" if api_result['prediction'] == 'pup' else "🚚 NOT PUP"
+                            confidence = api_result['confidence']
+                            
+                            st.markdown(f"""
+                            <div style="background: {'#e6fffa' if api_result['prediction'] == 'pup' else '#fff5f5'}; 
+                                        border: 2px solid {'#38a169' if api_result['prediction'] == 'pup' else '#e53e3e'}; 
+                                        border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <h3 style="color: {'#2f855a' if api_result['prediction'] == 'pup' else '#c53030'}; margin-bottom: 1rem;">
+                                    {prediction_class}
+                                </h3>
+                                <p style="font-size: 1.2rem; font-weight: bold; color: #4a5568;">
+                                    Confidence: {confidence:.1f}%
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        # Add JavaScript to show success notification
+                        st.components.v1.html(f"""
+                        <script>
+                        console.log('✅ Prediction completed successfully!');
+                        console.log('Result:', {json.dumps(api_result)});
+                        
+                        // Show result in a notification style
+                        if (window.parent) {{
+                            try {{
+                                window.parent.postMessage({{
+                                    type: 'prediction_result',
+                                    result: {json.dumps(api_result)}
+                                }}, '*');
+                            }} catch (e) {{
+                                console.log('Could not send result to parent:', e);
+                            }}
+                        }}
+                        </script>
+                        """, height=100)
+                        
+                        # Return JSON response for programmatic access
+                        st.json(api_result)
+                        return True
+                    else:
+                        st.error("❌ Model failed to load")
+                        return True
+                        
             except Exception as e:
-                st.error(f"❌ Error processing image: {str(e)}")
+                error_msg = str(e)
+                st.error(f"❌ Error processing image: {error_msg}")
+                
+                # Debug information
+                st.info(f"🔍 Debug: Image data length: {len(image_data) if image_data else 'None'}")
+                if len(error_msg) < 200:
+                    st.code(f"Error details: {error_msg}")
                 return True
         else:
-            st.info("📝 Send POST request with 'image_data' parameter containing base64 encoded image")
+            st.info("📝 Send request with 'image_data' parameter containing base64 encoded image")
+            st.markdown("### 📖 API Usage")
+            st.code("https://pup-test.streamlit.app/?api=predict&image_data=<base64_image_data>")
             return True
     
     # Check if this is from Tampermonkey (localStorage method)
@@ -241,16 +336,33 @@ def handle_api_request():
             
             // Build the redirect URL
             const baseUrl = window.location.origin + window.location.pathname;
-            const apiUrl = baseUrl + '?api=predict&image_data=' + encodeURIComponent(imageData) + '&image_loaded=true';
             
-            console.log('🔗 API URL length:', apiUrl.length);
+            // Check if image data is too large for URL
+            const maxUrlLength = 8192; // Conservative limit
+            const encodedData = encodeURIComponent(imageData);
+            const testUrl = baseUrl + '?api=predict&image_data=' + encodedData;
             
-            // Try to redirect
-            try {
-                window.location.href = apiUrl;
-            } catch (error) {
-                console.error('❌ Redirect failed:', error);
-                showStatus('❌ Redirect failed: ' + error.message, '#ffebee');
+            console.log('🔗 API URL length:', testUrl.length);
+            
+            if (testUrl.length > maxUrlLength) {
+                console.log('⚠️ URL too long for GET request, using alternative method');
+                showStatus('🔄 Image too large for URL, using alternative transfer...', '#fff3cd');
+                
+                // Store in a temporary variable and use a simpler redirect
+                window.tempImageData = imageData;
+                
+                // Redirect to a processing page that will handle the large image
+                window.location.href = baseUrl + '?api=predict&large_image=true';
+            } else {
+                // Normal redirect for smaller images
+                const apiUrl = testUrl + '&image_loaded=true';
+                
+                try {
+                    window.location.href = apiUrl;
+                } catch (error) {
+                    console.error('❌ Redirect failed:', error);
+                    showStatus('❌ Redirect failed: ' + error.message, '#ffebee');
+                }
             }
         }
         
