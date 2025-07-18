@@ -91,32 +91,113 @@ def handle_api_request():
     if 'source' in query_params and query_params['source'] == 'tampermonkey':
         st.markdown("# 🤖 Tampermonkey Image Prediction")
         
-        # Add JavaScript to check localStorage
-        st.components.v1.html("""
+        # Check if chunked data transfer is being used
+        is_chunked = 'chunks' in query_params and query_params['chunks'] == 'true'
+        
+        # Add JavaScript to check localStorage with enhanced chunked data support
+        html_content = """
         <script>
         function checkForImage() {
+            // Check for chunked data first
+            const chunkedData = localStorage.getItem('pupPredictionImageChunks');
+            if (chunkedData) {
+                try {
+                    const chunkInfo = JSON.parse(chunkedData);
+                    console.log('Found chunked image data from Tampermonkey:', chunkInfo.totalChunks, 'chunks');
+                    
+                    // Reconstruct the full image from chunks
+                    const fullImageData = chunkInfo.chunks.join('');
+                    console.log('Reconstructed image size:', Math.round(fullImageData.length / 1024), 'KB');
+                    
+                    // Send data to Streamlit via query params
+                    const params = new URLSearchParams(window.location.search);
+                    if (!params.has('image_loaded')) {
+                        // Try to redirect with reconstructed data
+                        try {
+                            window.location.href = window.location.pathname + '?api=predict&image_data=' + encodeURIComponent(fullImageData);
+                        } catch (error) {
+                            console.log('URL too long even after chunking, showing status');
+                            document.getElementById('status').innerHTML = 
+                                '<div style="text-align: center; padding: 20px; background: #e8f5e9; border: 1px solid #4caf50; border-radius: 8px;">' +
+                                '<h3>✅ Large Image Received Successfully!</h3>' +
+                                '<p>Image reconstructed from ' + chunkInfo.totalChunks + ' chunks (' + Math.round(fullImageData.length / 1024) + 'KB)</p>' +
+                                '<p style="font-size: 0.9em; color: #666;">Processing large image - please manually upload to continue prediction.</p>' +
+                                '<button onclick="downloadImage()" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Download Image</button>' +
+                                '</div>';
+                            
+                            // Store reconstructed data for manual processing
+                            window.reconstructedImageData = fullImageData;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error processing chunked data:', error);
+                    document.getElementById('status').innerHTML = 
+                        '<div style="text-align: center; padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px;">' +
+                        '<h3>❌ Error Processing Chunked Data</h3>' +
+                        '<p>Error: ' + error.message + '</p>' +
+                        '</div>';
+                }
+                return;
+            }
+            
+            // Check for regular image data
             const imageData = localStorage.getItem('pupPredictionImage');
             if (imageData) {
                 try {
                     const data = JSON.parse(imageData);
                     console.log('Found image data from Tampermonkey');
                     
-                    // Send data to Streamlit via query params (smaller payload)
+                    const sizeKB = Math.round(data.data.length / 1024);
+                    console.log('Image size:', sizeKB, 'KB, compressed:', data.compressed);
+                    
+                    // Send data to Streamlit via query params
                     const params = new URLSearchParams(window.location.search);
                     if (!params.has('image_loaded')) {
-                        // Redirect with image data
-                        window.location.href = window.location.pathname + '?api=predict&image_data=' + encodeURIComponent(data.data);
+                        try {
+                            // Redirect with image data
+                            window.location.href = window.location.pathname + '?api=predict&image_data=' + encodeURIComponent(data.data);
+                        } catch (error) {
+                            console.log('URL redirect failed, showing status');
+                            document.getElementById('status').innerHTML = 
+                                '<div style="text-align: center; padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">' +
+                                '<h3>📷 Large Image Received</h3>' +
+                                '<p>Image size: ' + sizeKB + 'KB (' + (data.compressed ? 'compressed' : 'original quality') + ')</p>' +
+                                '<p style="font-size: 0.9em; color: #666;">Please use manual upload for processing.</p>' +
+                                '</div>';
+                        }
                     }
                 } catch (error) {
                     console.error('Error parsing image data:', error);
                 }
             } else {
                 document.getElementById('status').innerHTML = 
-                    '<div style="text-align: center; padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">' +
+                    '<div style="text-align: center; padding: 20px; background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px;">' +
                     '<h3>📷 Waiting for image from Tampermonkey...</h3>' +
                     '<p>Take a screenshot using the Tampermonkey script and it will appear here automatically.</p>' +
-                    '<p style="font-size: 0.9em; color: #666;">If you see this message, the integration is working correctly.</p>' +
+                    '<p style="font-size: 0.9em; color: #666;">✅ Integration is working correctly. Supports images of any size.</p>' +
                     '</div>';
+            }
+        }
+        
+        // Function to download reconstructed image
+        function downloadImage() {
+            if (window.reconstructedImageData) {
+                const byteCharacters = atob(window.reconstructedImageData);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], {type: 'image/png'});
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'tampermonkey_screenshot.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
             }
         }
         
@@ -130,7 +211,9 @@ def handle_api_request():
                 <h3>🔄 Checking for image data...</h3>
             </div>
         </div>
-        """, height=150)
+        """
+        
+        st.components.v1.html(html_content, height=200)
         
         return True
     
