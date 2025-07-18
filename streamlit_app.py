@@ -1222,6 +1222,35 @@ def main():
     # Check if this is an API request first
     if handle_api_request():
         return
+
+    # --- Direct POST upload endpoint for Tampermonkey integration ---
+    if st.request.method == "POST":
+        st.markdown("# 🤖 API Prediction Endpoint (POST Upload)")
+        uploaded_file = st.request.files.get("file")
+        if uploaded_file:
+            image_bytes = uploaded_file.read()
+            image = Image.open(io.BytesIO(image_bytes))
+            st.image(image, caption="Uploaded Image", use_column_width=True)
+            model = load_breakthrough_model()
+            if model:
+                with st.spinner("🤖 AI is analyzing the image..."):
+                    result, error = predict_image(model, image)
+                if error:
+                    st.error(f"❌ Prediction Error: {error}")
+                else:
+                    api_result = {
+                        'prediction': 'pup' if result['is_pup'] else 'not_pup',
+                        'confidence': result['confidence'] * 100,
+                        'probability': result['probability'],
+                        'class': result['class'],
+                        'filename': uploaded_file.name
+                    }
+                    st.json(api_result)
+            else:
+                st.error("❌ Model failed to load")
+        else:
+            st.error("❌ No file uploaded in POST request")
+        return
     
     # Initialize dark mode in session state if not exists
     if 'dark_mode' not in st.session_state:
