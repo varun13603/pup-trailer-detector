@@ -1832,6 +1832,61 @@ def main():
                 </div>
             </div>
             """, unsafe_allow_html=True)
+        
+        # Test Integration Section
+        st.markdown("---")
+        st.markdown("""
+        ### 🧪 Test Tampermonkey Integration
+        Use this section to test the communication between the Tampermonkey script and Streamlit app.
+        """)
+        
+        if st.button("🧪 Test PostMessage Integration"):
+            # Create a test postMessage simulation
+            st.components.v1.html("""
+            <script>
+            // Simulate receiving data from Tampermonkey
+            console.log('🧪 Testing postMessage integration...');
+            
+            // Create a small test image (1x1 pixel PNG in base64)
+            const testImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+            
+            // Simulate postMessage from Tampermonkey
+            setTimeout(() => {
+                const testData = {
+                    type: 'imageData',
+                    data: testImageBase64,
+                    filename: 'test_integration.png',
+                    size: 1
+                };
+                
+                console.log('🧪 Sending test data via postMessage:', testData);
+                
+                // Send to self to test the message listener
+                window.postMessage(testData, window.location.origin);
+                
+                // Also try to redirect to API directly for testing
+                const redirectUrl = window.location.origin + window.location.pathname + 
+                    '?api=predict&image_data=' + encodeURIComponent(testImageBase64) + 
+                    '&filename=test_integration.png' + 
+                    '&origin=' + encodeURIComponent(window.location.origin);
+                
+                console.log('🧪 Test redirect URL:', redirectUrl);
+                
+                // Show result
+                document.body.innerHTML += '<div style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 8px; margin: 1rem 0; border: 1px solid #c3e6cb;">' +
+                    '<h4>✅ Integration Test Completed</h4>' +
+                    '<p>PostMessage sent with test image data. Check console for details.</p>' +
+                    '<p><strong>Next:</strong> Click the link below to test API redirect:</p>' +
+                    '<a href="' + redirectUrl + '" target="_blank" style="color: #007bff; font-weight: bold;">🔗 Test API Redirect</a>' +
+                    '</div>';
+                
+            }, 1000);
+            </script>
+            <div style="text-align: center; padding: 2rem;">
+                <h4>🧪 Testing Integration...</h4>
+                <p>This will simulate data being sent from the Tampermonkey script.</p>
+            </div>
+            """, height=300)
     
     # Enhanced footer
     footer_class = "dark-footer" if dark_mode else "clean-footer"
