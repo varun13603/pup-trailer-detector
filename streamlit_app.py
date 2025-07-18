@@ -87,6 +87,53 @@ def handle_api_request():
             st.info("📝 Send POST request with 'image_data' parameter containing base64 encoded image")
             return True
     
+    # Check if this is from Tampermonkey (localStorage method)
+    if 'source' in query_params and query_params['source'] == 'tampermonkey':
+        st.markdown("# 🤖 Tampermonkey Image Prediction")
+        
+        # Add JavaScript to check localStorage
+        st.components.v1.html("""
+        <script>
+        function checkForImage() {
+            const imageData = localStorage.getItem('pupPredictionImage');
+            if (imageData) {
+                try {
+                    const data = JSON.parse(imageData);
+                    console.log('Found image data from Tampermonkey');
+                    
+                    // Send data to Streamlit via query params (smaller payload)
+                    const params = new URLSearchParams(window.location.search);
+                    if (!params.has('image_loaded')) {
+                        // Redirect with image data
+                        window.location.href = window.location.pathname + '?api=predict&image_data=' + encodeURIComponent(data.data);
+                    }
+                } catch (error) {
+                    console.error('Error parsing image data:', error);
+                }
+            } else {
+                document.getElementById('status').innerHTML = 
+                    '<div style="text-align: center; padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">' +
+                    '<h3>📷 Waiting for image from Tampermonkey...</h3>' +
+                    '<p>Take a screenshot using the Tampermonkey script and it will appear here automatically.</p>' +
+                    '<p style="font-size: 0.9em; color: #666;">If you see this message, the integration is working correctly.</p>' +
+                    '</div>';
+            }
+        }
+        
+        // Check immediately and then every 2 seconds
+        checkForImage();
+        setInterval(checkForImage, 2000);
+        </script>
+        
+        <div id="status">
+            <div style="text-align: center; padding: 20px;">
+                <h3>🔄 Checking for image data...</h3>
+            </div>
+        </div>
+        """, height=150)
+        
+        return True
+    
     return False
 
 # Configuration
