@@ -107,7 +107,11 @@ def handle_api_request():
         # Check if chunked data transfer is being used
         is_chunked = 'chunks' in query_params and query_params['chunks'] == 'true'
         
-        # Add JavaScript to check localStorage with enhanced chunked data support
+        # Check if blob URL method is being used
+        is_blob = 'method' in query_params and query_params['method'] == 'blob'
+        direct_blob = 'blob' in query_params
+        
+        # Add JavaScript to check localStorage with enhanced chunked data support and blob handling
         html_content = """
         <script>
         console.log('🔄 Tampermonkey integration script started');
@@ -121,7 +125,35 @@ def handle_api_request():
             
             console.log('🔍 Checking for image data...');
             
-            // Check for chunked data first
+            // Check for blob URL in query params first
+            const urlParams = new URLSearchParams(window.location.search);
+            const blobUrl = urlParams.get('blob');
+            if (blobUrl) {
+                console.log('📎 Found blob URL in query params');
+                processBlobUrl(decodeURIComponent(blobUrl));
+                return;
+            }
+            
+            // Check for blob reference in localStorage
+            try {
+                const blobData = localStorage.getItem('pupBlobTransfer');
+                if (blobData) {
+                    console.log('📎 Found blob transfer data');
+                    const data = JSON.parse(blobData);
+                    console.log('📊 Blob data:', data.filename, data.size + 'KB');
+                    
+                    processingComplete = true;
+                    localStorage.removeItem('pupBlobTransfer');
+                    
+                    processBlobUrl(data.blobUrl);
+                    return;
+                }
+            } catch (error) {
+                console.error('❌ Error processing blob data:', error);
+                showStatus('❌ Error Processing Blob Data: ' + error.message, '#ffebee');
+            }
+            
+            // Check for chunked data
             try {
                 const chunkedData = localStorage.getItem('pupPredictionImageChunks');
                 if (chunkedData) {
@@ -178,6 +210,29 @@ def handle_api_request():
                 '<small>🌐 Production URL: https://pup-test.streamlit.app/</small>',
                 '#e3f2fd'
             );
+        }
+        
+        function processBlobUrl(blobUrl) {
+            console.log('📎 Processing blob URL:', blobUrl.substring(0, 50) + '...');
+            showStatus('📎 Processing blob image data...', '#fff3cd');
+            
+            fetch(blobUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    console.log('📦 Blob loaded, size:', Math.round(blob.size / 1024), 'KB');
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64Data = e.target.result.split(',')[1];
+                        console.log('🔄 Converted blob to base64, redirecting...');
+                        redirectToAPI(base64Data);
+                    };
+                    reader.readAsDataURL(blob);
+                })
+                .catch(error => {
+                    console.error('❌ Error processing blob URL:', error);
+                    showStatus('❌ Error Processing Blob: ' + error.message, '#ffebee');
+                });
         }
         
         function redirectToAPI(imageData) {
