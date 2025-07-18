@@ -57,9 +57,9 @@ def handle_api_request():
             if (window.tempImageData) {
                 console.log('🔍 Found temp image data:', window.tempImageData.length);
                 // Get filename and origin from URL params or use temp variables
-                const urlParams = new URLSearchParams(window.location.search);
-                const filename = urlParams.get('filename') || window.tempFilename || 'large_image.png';
-                const origin = urlParams.get('origin') || window.tempOrigin || 'https://trans-logistics.amazon.com';
+                const urlParams1 = new URLSearchParams(window.location.search);
+                const filename = urlParams1.get('filename') || window.tempFilename || 'large_image.png';
+                const origin = urlParams1.get('origin') || window.tempOrigin || 'https://trans-logistics.amazon.com';
                 
                 // Redirect to API with the large image data
                 const redirectUrl = window.location.origin + window.location.pathname + 
@@ -150,8 +150,8 @@ def handle_api_request():
                         // Send result back to the parent window (Tampermonkey script)
                         try {{
                             // Try to get the origin from query params
-                            const urlParams = new URLSearchParams(window.location.search);
-                            const origin = urlParams.get('origin') || 'https://trans-logistics.amazon.com';
+                            const urlParams2 = new URLSearchParams(window.location.search);
+                            const origin = urlParams2.get('origin') || 'https://trans-logistics.amazon.com';
                             
                             // Send message to parent opener window
                             if (window.opener) {{
@@ -263,8 +263,8 @@ def handle_api_request():
             console.log('🔍 Checking for image data...');
             
             // Check for blob URL in query params first
-            const urlParams = new URLSearchParams(window.location.search);
-            const blobUrl = urlParams.get('blob');
+            const urlParams3 = new URLSearchParams(window.location.search);
+            const blobUrl = urlParams3.get('blob');
             if (blobUrl) {
                 console.log('📎 Found blob URL in query params:', blobUrl);
                 processingComplete = true;
@@ -341,8 +341,8 @@ def handle_api_request():
             console.log('📭 No image data found in localStorage');
             
             // Check if we're waiting for postMessage
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('method') === 'postmessage') {
+            const urlParams4 = new URLSearchParams(window.location.search);
+            if (urlParams4.get('method') === 'postmessage') {
                 showStatus(
                     '� Waiting for image data via postMessage...<br>' +
                     'Streamlit is ready to receive image from Tampermonkey.<br>' +
@@ -366,8 +366,8 @@ def handle_api_request():
             showStatus('📎 Processing blob image data...', '#fff3cd');
             
             // Get filename from query params
-            const urlParams = new URLSearchParams(window.location.search);
-            const filename = urlParams.get('filename') || 'blob_image.png';
+            const urlParams5 = new URLSearchParams(window.location.search);
+            const filename = urlParams5.get('filename') || 'blob_image.png';
             
             fetch(blobUrl)
                 .then(response => response.blob())
