@@ -51,46 +51,25 @@ def handle_api_request():
         # Method 3: Check for large image flag and look for data in window object
         elif 'large_image' in query_params:
             st.info("📥 Processing large image data...")
-            # Add JavaScript to check for temp image data
+            # Add JavaScript to always use POST for large images
             st.components.v1.html("""
             <script>
             if (window.tempImageData) {
                 console.log('🔍 Found temp image data:', window.tempImageData.length);
-                
-                // Create a form and submit the data
+                // Create a form and submit the data via POST
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '?api=predict&method=post';
-                
+                form.target = '_self';
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = 'image_data';
                 input.value = window.tempImageData;
-                
                 form.appendChild(input);
                 document.body.appendChild(form);
-                
-                // For now, just try to put it in localStorage and reload
-                try {
-                    localStorage.setItem('largeTempImage', window.tempImageData);
-                    window.location.reload();
-                } catch (e) {
-                    console.error('Failed to store large image:', e);
-                    document.body.innerHTML = '<h2>❌ Image too large to process</h2>';
-                }
+                form.submit();
             } else {
-                // Check localStorage for the large image
-                const largeImage = localStorage.getItem('largeTempImage');
-                if (largeImage) {
-                    localStorage.removeItem('largeTempImage');
-                    
-                    // Redirect with the image data
-                    const url = window.location.origin + window.location.pathname + 
-                                '?api=predict&image_data=' + encodeURIComponent(largeImage);
-                    window.location.href = url;
-                } else {
-                    document.body.innerHTML = '<h2>❌ No large image data found</h2>';
-                }
+                document.body.innerHTML = '<h2>❌ No large image data found</h2>';
             }
             </script>
             """, height=100)
