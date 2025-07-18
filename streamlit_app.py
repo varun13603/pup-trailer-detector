@@ -47,7 +47,20 @@ def handle_api_request():
                 # Load model and make prediction
                 model = load_breakthrough_model()
                 if model:
-                    result = predict_image(model, image)
+                    result, error = predict_image(model, image)
+                    
+                    if error:
+                        st.error(f"❌ Error: {error}")
+                        return True
+                    
+                    # Convert result format for compatibility
+                    api_result = {
+                        'prediction': 'pup' if result['is_pup'] else 'not_pup',
+                        'confidence': result['confidence'] * 100,  # Convert to percentage
+                        'probability': result['probability'],
+                        'class': result['class'],
+                        'filename': 'tampermonkey_screenshot.png'
+                    }
                     
                     # Display result
                     st.success(f"✅ Prediction completed!")
@@ -57,14 +70,14 @@ def handle_api_request():
                         st.image(image, caption="Uploaded Image", use_container_width=True)
                     
                     with col2:
-                        prediction_class = "🚛 PUP TRAILER" if result['prediction'] == 'pup' else "🚚 NOT PUP"
-                        confidence = result['confidence']
+                        prediction_class = "🚛 PUP TRAILER" if api_result['prediction'] == 'pup' else "🚚 NOT PUP"
+                        confidence = api_result['confidence']
                         
                         st.markdown(f"""
-                        <div style="background: {'#e6fffa' if result['prediction'] == 'pup' else '#fff5f5'}; 
-                                    border: 2px solid {'#38a169' if result['prediction'] == 'pup' else '#e53e3e'}; 
+                        <div style="background: {'#e6fffa' if api_result['prediction'] == 'pup' else '#fff5f5'}; 
+                                    border: 2px solid {'#38a169' if api_result['prediction'] == 'pup' else '#e53e3e'}; 
                                     border-radius: 12px; padding: 1.5rem; text-align: center;">
-                            <h3 style="color: {'#2f855a' if result['prediction'] == 'pup' else '#c53030'}; margin-bottom: 1rem;">
+                            <h3 style="color: {'#2f855a' if api_result['prediction'] == 'pup' else '#c53030'}; margin-bottom: 1rem;">
                                 {prediction_class}
                             </h3>
                             <p style="font-size: 1.2rem; font-weight: bold; color: #4a5568;">
@@ -74,7 +87,7 @@ def handle_api_request():
                         """, unsafe_allow_html=True)
                     
                     # Return JSON response for programmatic access
-                    st.json(result)
+                    st.json(api_result)
                     return True
                 else:
                     st.error("❌ Model failed to load")
@@ -97,7 +110,11 @@ def handle_api_request():
         # Add JavaScript to check localStorage with enhanced chunked data support
         html_content = """
         <script>
+        let imageProcessed = false;
+        
         function checkForImage() {
+            if (imageProcessed) return; // Prevent multiple processing
+            
             // Check for chunked data first
             const chunkedData = localStorage.getItem('pupPredictionImageChunks');
             if (chunkedData) {
@@ -109,26 +126,18 @@ def handle_api_request():
                     const fullImageData = chunkInfo.chunks.join('');
                     console.log('Reconstructed image size:', Math.round(fullImageData.length / 1024), 'KB');
                     
-                    // Send data to Streamlit via query params
-                    const params = new URLSearchParams(window.location.search);
-                    if (!params.has('image_loaded')) {
-                        // Try to redirect with reconstructed data
-                        try {
-                            window.location.href = window.location.pathname + '?api=predict&image_data=' + encodeURIComponent(fullImageData);
-                        } catch (error) {
-                            console.log('URL too long even after chunking, showing status');
-                            document.getElementById('status').innerHTML = 
-                                '<div style="text-align: center; padding: 20px; background: #e8f5e9; border: 1px solid #4caf50; border-radius: 8px;">' +
-                                '<h3>✅ Large Image Received Successfully!</h3>' +
-                                '<p>Image reconstructed from ' + chunkInfo.totalChunks + ' chunks (' + Math.round(fullImageData.length / 1024) + 'KB)</p>' +
-                                '<p style="font-size: 0.9em; color: #666;">Processing large image - please manually upload to continue prediction.</p>' +
-                                '<button onclick="downloadImage()" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Download Image</button>' +
-                                '</div>';
-                            
-                            // Store reconstructed data for manual processing
-                            window.reconstructedImageData = fullImageData;
-                        }
-                    }
+                    imageProcessed = true;
+                    
+                    // Send data to Streamlit via query params - force page reload
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('api', 'predict');
+                    currentUrl.searchParams.set('image_data', fullImageData);
+                    currentUrl.searchParams.set('image_loaded', 'true');
+                    
+                    // Clear the data and redirect
+                    localStorage.removeItem('pupPredictionImageChunks');
+                    window.location.href = currentUrl.toString();
+                    
                 } catch (error) {
                     console.error('Error processing chunked data:', error);
                     document.getElementById('status').innerHTML = 
@@ -150,24 +159,27 @@ def handle_api_request():
                     const sizeKB = Math.round(data.data.length / 1024);
                     console.log('Image size:', sizeKB, 'KB, compressed:', data.compressed);
                     
-                    // Send data to Streamlit via query params
-                    const params = new URLSearchParams(window.location.search);
-                    if (!params.has('image_loaded')) {
-                        try {
-                            // Redirect with image data
-                            window.location.href = window.location.pathname + '?api=predict&image_data=' + encodeURIComponent(data.data);
-                        } catch (error) {
-                            console.log('URL redirect failed, showing status');
-                            document.getElementById('status').innerHTML = 
-                                '<div style="text-align: center; padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">' +
-                                '<h3>📷 Large Image Received</h3>' +
-                                '<p>Image size: ' + sizeKB + 'KB (' + (data.compressed ? 'compressed' : 'original quality') + ')</p>' +
-                                '<p style="font-size: 0.9em; color: #666;">Please use manual upload for processing.</p>' +
-                                '</div>';
-                        }
-                    }
+                    imageProcessed = true;
+                    
+                    // Clear the localStorage first
+                    localStorage.removeItem('pupPredictionImage');
+                    
+                    // Force redirect to API endpoint
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('api', 'predict');
+                    currentUrl.searchParams.set('image_data', data.data);
+                    currentUrl.searchParams.set('image_loaded', 'true');
+                    
+                    console.log('Redirecting to API endpoint...');
+                    window.location.href = currentUrl.toString();
+                    
                 } catch (error) {
                     console.error('Error parsing image data:', error);
+                    document.getElementById('status').innerHTML = 
+                        '<div style="text-align: center; padding: 20px; background: #ffebee; border: 1px solid #f44336; border-radius: 8px;">' +
+                        '<h3>❌ Error Processing Image Data</h3>' +
+                        '<p>Error: ' + error.message + '</p>' +
+                        '</div>';
                 }
             } else {
                 document.getElementById('status').innerHTML = 
@@ -175,35 +187,19 @@ def handle_api_request():
                     '<h3>📷 Waiting for image from Tampermonkey...</h3>' +
                     '<p>Take a screenshot using the Tampermonkey script and it will appear here automatically.</p>' +
                     '<p style="font-size: 0.9em; color: #666;">✅ Integration is working correctly. Supports images of any size.</p>' +
+                    '<p style="font-size: 0.8em; color: #999;">Production Streamlit app: https://pup-test.streamlit.app/</p>' +
                     '</div>';
             }
         }
         
-        // Function to download reconstructed image
-        function downloadImage() {
-            if (window.reconstructedImageData) {
-                const byteCharacters = atob(window.reconstructedImageData);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], {type: 'image/png'});
-                
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'tampermonkey_screenshot.png';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }
-        }
-        
-        // Check immediately and then every 2 seconds
+        // Check immediately and then every 1 second
         checkForImage();
-        setInterval(checkForImage, 2000);
+        const intervalId = setInterval(checkForImage, 1000);
+        
+        // Stop checking after 30 seconds to avoid infinite loops
+        setTimeout(() => {
+            clearInterval(intervalId);
+        }, 30000);
         </script>
         
         <div id="status">
