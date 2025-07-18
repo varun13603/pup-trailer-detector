@@ -25,6 +25,70 @@ from huggingface_hub import hf_hub_download
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# API endpoint handling
+def handle_api_request():
+    """Handle API requests for programmatic image uploads"""
+    # Check if this is an API request
+    query_params = st.query_params
+    
+    if 'api' in query_params and query_params['api'] == 'predict':
+        # This is an API request
+        st.markdown("# 🤖 API Prediction Endpoint")
+        
+        # Check for base64 image data in query params
+        if 'image_data' in query_params:
+            try:
+                image_data = query_params['image_data']
+                
+                # Decode base64 image
+                image_bytes = base64.b64decode(image_data)
+                image = Image.open(io.BytesIO(image_bytes))
+                
+                # Load model and make prediction
+                model = load_breakthrough_model()
+                if model:
+                    result = predict_image(model, image)
+                    
+                    # Display result
+                    st.success(f"✅ Prediction completed!")
+                    
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        st.image(image, caption="Uploaded Image", use_container_width=True)
+                    
+                    with col2:
+                        prediction_class = "🚛 PUP TRAILER" if result['prediction'] == 'pup' else "🚚 NOT PUP"
+                        confidence = result['confidence']
+                        
+                        st.markdown(f"""
+                        <div style="background: {'#e6fffa' if result['prediction'] == 'pup' else '#fff5f5'}; 
+                                    border: 2px solid {'#38a169' if result['prediction'] == 'pup' else '#e53e3e'}; 
+                                    border-radius: 12px; padding: 1.5rem; text-align: center;">
+                            <h3 style="color: {'#2f855a' if result['prediction'] == 'pup' else '#c53030'}; margin-bottom: 1rem;">
+                                {prediction_class}
+                            </h3>
+                            <p style="font-size: 1.2rem; font-weight: bold; color: #4a5568;">
+                                Confidence: {confidence:.1f}%
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Return JSON response for programmatic access
+                    st.json(result)
+                    return True
+                else:
+                    st.error("❌ Model failed to load")
+                    return True
+                    
+            except Exception as e:
+                st.error(f"❌ Error processing image: {str(e)}")
+                return True
+        else:
+            st.info("📝 Send POST request with 'image_data' parameter containing base64 encoded image")
+            return True
+    
+    return False
+
 # Configuration
 MODEL_REPO_ID = "Jackaiuser/pup_detect"
 MODEL_FILENAME = "final_breakthrough_model.h5"
@@ -39,7 +103,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 
 # Page configuration
 st.set_page_config(
-    page_title="Pup Trailer Detector",
+    page_title="🚛 Pup Trailer Detector",
     page_icon="🚛",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -852,6 +916,10 @@ def save_prediction_to_session(result, image_name):
 
 def main():
     """Main application."""
+    # Check if this is an API request first
+    if handle_api_request():
+        return
+    
     # Initialize dark mode in session state if not exists
     if 'dark_mode' not in st.session_state:
         st.session_state.dark_mode = True
