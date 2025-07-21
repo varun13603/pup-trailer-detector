@@ -1206,7 +1206,7 @@ def main():
                         """, unsafe_allow_html=True)
                         
                         st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                        st.image(image, caption="🌐 Downloaded from URL", use_container_width=True)
+                        st.image(image, caption=f"📁 {uploaded_file.name}", use_container_width=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                     
                     with col2:
